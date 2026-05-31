@@ -1,21 +1,36 @@
-from library import get_song_info
-from player import play_song
+
 import os
-from functions.filterFormats import filterFormats
+import musicController
 os.system("cls" if os.name == "nt" else "clear")
-songs_dir = "/Users/narimanhosseinzadeh/Documents/music/"
 
-songs = filterFormats(songs_dir)
+musicController.show_library()
+print("\n1. type /p (number) to play song ")
+print("2. type /exit to exit player")
+print('\n')
+while True:
+    
+
+    choice = input("enter command:")
+    if choice.lower().startswith('/exit'):
+        break
+
+    if choice.lower().startswith('/p'):
+        parts = choice.split()
+        if len(parts) != 2:
+            print("Invalid command. Use: /p <number>")
+            continue
+        try:
+            song_number = int(parts[1])
+            musicController.play_song(index = song_number)
+        except ValueError:
+            print('invalid song number')
         
-os.system("cls" if os.name == "nt" else "clear")
-for i, song in enumerate(songs):
-    path = os.path.join(songs_dir, song)
-    info = get_song_info(path)
-    print(f"{i+1}. {info['title']} - {info['artist']} - {info['length']}")
-   
+    elif choice == "1":
+        musicController.unpause_song()
+    elif choice == "2":
+        musicController.pause_song()
+    elif choice == "3":
+        musicController.stop_song()
 
-choice = int(input("Choose a song: "))
+        
 
-selected_song = songs[choice - 1]
-
-play_song(os.path.join(songs_dir, selected_song))
