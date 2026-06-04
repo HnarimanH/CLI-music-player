@@ -1,14 +1,20 @@
-import pygame
-print(pygame.__version__)
+import vlc
 
-pygame.mixer.init()
+player = vlc.MediaPlayer()
 
 def play_song(path):
-    pygame.mixer.music.load(path)
-    pygame.mixer.music.play()
+    media = vlc.Media(path)
+    player.set_media(media)
+    player.play()
+
 def pause_song():
-    pygame.mixer.music.pause()
-def unpause_song():
-    pygame.mixer.music.unpause()   
+    player.pause()
+
 def stop_song():
-    pygame.mixer.music.stop()
+    player.stop()
+
+def get_position():
+    return player.get_time() / 1000  # ms → sec
+
+def get_length():
+    return player.get_length() / 1000

@@ -1,12 +1,22 @@
 
 import os
 import musicController
-os.system("cls" if os.name == "nt" else "clear")
+from musicController import return_library
+from functions.coverToAscii import cover_to_ascii
 
-musicController.show_library()
-print("\n1. type /p (number) to play song ")
-print("2. type /exit to exit player")
-print('\n')
+os.system("cls" if os.name == "nt" else "clear")
+library = return_library()
+
+
+
+
+print(
+
+    cover_to_ascii(library[0]["cover"],width=56)
+
+)
+
+
 while True:
     
 

@@ -11,12 +11,23 @@ os.system("cls" if os.name == "nt" else "clear")
 
     
     
-def show_library():
-    for i, song in enumerate(songs):
+def return_library():
+    song_list = []
+
+    for song in songs:
         path = os.path.join(songs_dir, song)
         info = get_song_info(path)
-        print(f"{i+1}. {info['title']} - {info['artist']} - {info['length']}")
-        
+
+        song_list.append({
+            "title": info["title"],
+            "artist": info["artist"],
+            "album": info["album"],
+            "length": info["length"],
+            "cover": info["cover"],
+            "filename": song,
+            "path": path,
+        })
+    return song_list
         
     
     
@@ -24,10 +35,7 @@ def play_song(index):
     if index < 1 or index > len(songs):
         print("Invalid song number")
         return
-
     selected_song = os.path.join(songs_dir, songs[index - 1])
-
-    print(f"\n▶ Playing: {selected_song}")
     Audio.play_song(selected_song)
 def pause_song():
     Audio.pause_song()
