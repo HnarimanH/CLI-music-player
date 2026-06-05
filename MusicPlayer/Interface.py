@@ -1,62 +1,74 @@
 import musicController
 from textual.app import App, ComposeResult
 from textual.widgets import Header, DataTable
-from audioEngine import get_position, get_length
+from audioEngine import get_position, get_length, song_finished
 from textual.containers import Horizontal, Vertical
 from components.audioVisualizer import AudioVisualizer
-from functions.coverToAscii import cover_to_ascii
-from functions.extractAudioWave import get_audio_wave
 from components.songTable import SongTable
 from components.nowPlaying import NowPlaying
 from components.songProgress import SongProgress
+from themes import get_theme
+
+import musicController
 class MusicPlayer(App):
-    """A Textual music player interface."""
-
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
-
-    CSS = """
-    #song-table {
-
+    theme = get_theme("green")
+    accent = theme["accent"]
+    bg = theme["background"]
+    CSS = f"""
+    #song-table {{
+        color:{accent};
         height:50%;
-        border:round purple;
-        background:black;
-    }
+        border:round;
+        background:{bg};
+    }}
 
-    #now-playing {
+    #now-playing {{
+        color:{accent};
         width: 1fr;
         height: 100%;
-        background: black;
-        border: round purple;
+        background: {bg};
+        border: round;
         align: center middle;
         text-align:center;
-    }
+    }}
 
-    #AlbumAsciiCover {
+    #AlbumAsciiCover {{
+        color:{accent};
         content-align: center middle;
         text-align: center;
         padding-top:1;
         padding-left:1;
-    }
+    }}
 
-    #SongDetails {
+    #SongDetails {{
+        color:{accent};
         content-align: center middle;
         text-align: center;
-    }
+    }}
     
-    #SongProgress {
+    #SongProgress {{
+        color:{accent};
         content-align: center middle;
         text-align: center;
-    }
-    #SongTime{
+    }}
+
+    #SongTime {{
+        color:{accent};
         content-align: center middle;
         text-align: center;
-    }
-    #audio-visualizer {
+    }}
+
+    #audio-visualizer {{
+        color:{accent};
         height: 1fr;
-        border: round purple;
+        border: round;
         content-align: center middle;
-        background:black;
-    }
+        background:{bg};
+    }}
+    
+    #left_panel {{
+        width:60%;
+    }}
     """
     
     songsList = musicController.return_library()
@@ -68,6 +80,7 @@ class MusicPlayer(App):
         left_panel = Vertical(
             SongTable(self.songsList),
             AudioVisualizer(),
+            id="left_panel"
         )
 
         yield Horizontal(
@@ -80,23 +93,43 @@ class MusicPlayer(App):
         return
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        index = event.cursor_row
+        self.index = event.cursor_row
 
-        if index is None or index < 0:
+        if self.index is None or self.index < 0:
             return
 
-        self.song = self.songsList[index]
-        ascii_cover = cover_to_ascii(self.song["cover"],width=72)
-        self.visualizer_frames = get_audio_wave(self.song["path"])
+        song_data = musicController.load_song(self.index)
         
-        musicController.play_song(index + 1)
+        self.song = song_data["song"]
+        self.visualizer_frames = song_data["visualizer_frames"]
 
+        musicController.play_song(self.index + 1)
         now_playing = self.query_one(NowPlaying)
-        now_playing.update_song(ascii_cover, self.song)
+        now_playing.update_song(
+            song_data["ascii_cover"],
+            self.song
+        )
 
     def on_mount(self) -> None:
-        self.set_interval(0.05, self.update_progress)
+        self.set_interval(0.1, self.update_progress)
+    
+    
+    def play_next_song(self):
+        self.index += 1
 
+        if self.index >= len(self.songsList):
+            return
+        song_data = musicController.load_song(self.index)
+        
+        self.song = song_data["song"]
+        self.visualizer_frames = song_data["visualizer_frames"]
+
+        musicController.play_song(self.index + 1)
+        now_playing = self.query_one(NowPlaying)
+        now_playing.update_song(
+            song_data["ascii_cover"],
+            self.song
+        )
     def update_progress(self) -> None:
         
         try:
@@ -127,6 +160,8 @@ class MusicPlayer(App):
                 return
 
             progress_bar.update_progress(current,total)
+            if song_finished():
+                self.play_next_song()
         except Exception as e:
             print(e)
 

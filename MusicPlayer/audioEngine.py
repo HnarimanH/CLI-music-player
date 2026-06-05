@@ -18,3 +18,5 @@ def get_position():
 
 def get_length():
     return player.get_length() / 1000
+def song_finished():
+    return player.get_state() == vlc.State.Ended

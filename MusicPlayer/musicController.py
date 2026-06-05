@@ -3,6 +3,8 @@ import os
 
 from functions.filterFormats import filterFormats
 from library import get_song_info
+from functions.coverToAscii import cover_to_ascii
+from functions.extractAudioWave import get_audio_wave
 songs_dir = "/Users/narimanhosseinzadeh/Documents/music/"
 
 songs = filterFormats(songs_dir)
@@ -43,3 +45,13 @@ def unpause_song():
     Audio.unpause_song()
 def stop_song():
     Audio.stop_song()
+def load_song(index):
+    songs = return_library()
+    song = songs[index]
+    ascii_cover = cover_to_ascii(song["cover"],width=72)
+    visualizer_frames = get_audio_wave(song["path"],bars=60)
+    return {
+        "song": song,
+        "ascii_cover": ascii_cover,
+        "visualizer_frames": visualizer_frames,
+    }
