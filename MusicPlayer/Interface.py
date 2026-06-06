@@ -11,14 +11,14 @@ from themes import get_theme
 
 import musicController
 class MusicPlayer(App):
-    theme = get_theme("green")
-    accent = theme["accent"]
-    bg = theme["background"]
+    ui_theme = get_theme("purple")
+    accent = ui_theme["accent"]
+    bg = ui_theme["background"]
     CSS = f"""
     #song-table {{
         color:{accent};
         height:50%;
-        border:round;
+        border:round {accent};
         background:{bg};
     }}
 
@@ -27,7 +27,7 @@ class MusicPlayer(App):
         width: 1fr;
         height: 100%;
         background: {bg};
-        border: round;
+        border: {accent} round;
         align: center middle;
         text-align:center;
     }}
@@ -61,7 +61,7 @@ class MusicPlayer(App):
     #audio-visualizer {{
         color:{accent};
         height: 1fr;
-        border: round;
+        border: {accent} round;
         content-align: center middle;
         background:{bg};
     }}
