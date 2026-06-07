@@ -32,9 +32,7 @@ platformdirs==4.10.0
 pooch==1.9.0
 propcache==0.5.2
 pycparser==3.0
-pygame==2.6.1
 Pygments==2.20.0
-python-mpv==1.0.8
 python-vlc==3.0.21203
 requests==2.34.2
 rich==15.0.0

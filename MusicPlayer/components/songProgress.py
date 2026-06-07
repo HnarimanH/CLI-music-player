@@ -1,6 +1,6 @@
 from textual.containers import Vertical
 from textual.widgets import Static
-import pygame
+
 
 class SongProgress(Vertical):
     def __init__(self, **kwargs):
