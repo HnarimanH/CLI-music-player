@@ -1,11 +1,38 @@
 import audioEngine as Audio
 import os
-
 from functions.filterFormats import filterFormats
 from library import get_song_info
 from functions.coverToAscii import cover_to_ascii
 from functions.extractAudioWave import get_audio_wave
-songs_dir = "/Users/narimanhosseinzadeh/Documents/music/"
+import json
+
+songs_dir = ""
+
+while True:
+    if not os.path.exists("config.json"):
+
+        directory = input("Please enter your music directory path: ")
+
+        if os.path.isdir(directory):
+
+            with open("config.json", "w") as f:
+                json.dump({"dir": directory}, f)
+
+            songs_dir = directory
+            break
+
+        else:
+            print("Invalid directory")
+
+    else:
+
+        with open("config.json", "r") as f:
+            data = json.load(f)
+
+        songs_dir = data["dir"]
+        break
+
+
 
 songs = filterFormats(songs_dir)
 
@@ -17,7 +44,12 @@ def return_library():
     song_list = []
 
     for song in songs:
+        if song.startswith("._") and os.name == 'nt':
+            os.remove(os.path.join(songs_dir, song))
+            continue
+            
         path = os.path.join(songs_dir, song)
+
         info = get_song_info(path)
 
         song_list.append({
@@ -45,11 +77,11 @@ def unpause_song():
     Audio.unpause_song()
 def stop_song():
     Audio.stop_song()
-def load_song(index):
-    songs = return_library()
+def load_song(index, songs):
+    
     song = songs[index]
     ascii_cover = cover_to_ascii(song["cover"],width=72)
-    visualizer_frames = get_audio_wave(song["path"],bars=60)
+    visualizer_frames = get_audio_wave(song["path"], bars=47)
     return {
         "song": song,
         "ascii_cover": ascii_cover,

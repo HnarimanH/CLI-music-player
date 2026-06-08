@@ -1,5 +1,6 @@
 import vlc
 
+instance = vlc.Instance("--quiet")
 player = vlc.MediaPlayer()
 
 def play_song(path):

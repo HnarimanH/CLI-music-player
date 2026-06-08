@@ -2,13 +2,13 @@ import librosa
 import numpy as np
 
 
-def get_audio_wave(path, bars=32):
-    y, sr = librosa.load(path, sr=None)
-
+def get_audio_wave(path, bars=32, hopLength = 1024):
+    y, sr = librosa.load(path, sr=None, mono=True)
+    y = y.astype(np.float32)
     stft = librosa.stft(
     y,
-    n_fft=256,
-    hop_length=1024
+    n_fft=512,
+    hop_length=hopLength
 )
     spectrogram = np.abs(stft)
 
@@ -39,7 +39,7 @@ def get_audio_wave(path, bars=32):
 
     for frame in visualizer_frames:
         
-        frame_max = max(frame) or 1
+        frame_max = np.max(frame)
 
         normalized = [
 
@@ -48,7 +48,7 @@ def get_audio_wave(path, bars=32):
             for value in frame[: bars // 2]
 
         ]
-        normalized.remove(max(normalized))
+        normalized = normalized[1:]
         mirrored = normalized[::-1][:-1] + normalized
 
         normalized_frames.append(mirrored)

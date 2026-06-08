@@ -8,7 +8,7 @@ from components.songTable import SongTable
 from components.nowPlaying import NowPlaying
 from components.songProgress import SongProgress
 from themes import get_theme
-
+import time
 import musicController
 class MusicPlayer(App):
     ui_theme = get_theme("purple")
@@ -98,10 +98,10 @@ class MusicPlayer(App):
         if self.index is None or self.index < 0:
             return
 
-        song_data = musicController.load_song(self.index)
+        song_data = musicController.load_song(self.index, songs = self.songsList)
         
         self.song = song_data["song"]
-        self.visualizer_frames = song_data["visualizer_frames"]
+        
 
         musicController.play_song(self.index + 1)
         now_playing = self.query_one(NowPlaying)
@@ -109,9 +109,13 @@ class MusicPlayer(App):
             song_data["ascii_cover"],
             self.song
         )
+        self.visualizer_frames = song_data["visualizer_frames"]
 
     def on_mount(self) -> None:
-        self.set_interval(0.1, self.update_progress)
+        self.progress_bar = self.query_one(SongProgress)
+        self.visualizer = self.query_one(AudioVisualizer)
+
+        self.set_interval(1/60, self.update_progress)
     
     
     def play_next_song(self):
@@ -119,11 +123,13 @@ class MusicPlayer(App):
 
         if self.index >= len(self.songsList):
             return
-        song_data = musicController.load_song(self.index)
-        
+      
+        song_data = musicController.load_song(self.index, songs = self.songsList)
+       
         self.song = song_data["song"]
+        
         self.visualizer_frames = song_data["visualizer_frames"]
-
+       
         musicController.play_song(self.index + 1)
         now_playing = self.query_one(NowPlaying)
         now_playing.update_song(
@@ -137,14 +143,13 @@ class MusicPlayer(App):
             total = get_length()
             
             
-            progress_bar = self.query_one(SongProgress)
-            visualizer = self.query_one(AudioVisualizer)
+            
             
             if not hasattr(self, "visualizer_frames"):
                 return
 
             frame_index = int(
-                (current / total) * len(self.visualizer_frames)
+                (current / total) * len(self.visualizer_frames) -1
             )
 
             frame_index = min(
@@ -154,12 +159,12 @@ class MusicPlayer(App):
 
             frame = self.visualizer_frames[frame_index]
 
-            visualizer.update_wave(frame)
+            self.visualizer.update_wave(frame)
 
             if current < 0:
                 return
 
-            progress_bar.update_progress(current,total)
+            self.progress_bar.update_progress(current,total)
             if song_finished():
                 self.play_next_song()
         except Exception as e:

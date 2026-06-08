@@ -5,6 +5,7 @@ from musicController import return_library
 from functions.coverToAscii import cover_to_ascii
 
 os.system("cls" if os.name == "nt" else "clear")
+print(os.name)
 library = return_library()
 
 
