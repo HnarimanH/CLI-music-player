@@ -14,11 +14,13 @@ class AudioVisualizer(Static):
         height = 20
         rows = []
 
+        bar_heights = [int(v * height) for v in visible]
+
         for row in range(height, 0, -1):
-            line = ""
-            for value in visible:
-                bar_height = int(value * height)
-                line += "██" if bar_height >= row else "  "
+            line = "".join(
+                "██" if h >= row else "  "
+                for h in bar_heights
+            )
             rows.append(line)
 
         self.update("\n".join(rows))
