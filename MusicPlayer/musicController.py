@@ -52,6 +52,10 @@ def return_library():
 
         info = get_song_info(path)
 
+        if info is None:
+            print(f"Skipping invalid file: {path}")
+            continue
+
         song_list.append({
             "title": info["title"],
             "artist": info["artist"],
