@@ -81,6 +81,11 @@ def unpause_song():
     Audio.unpause_song()
 def stop_song():
     Audio.stop_song()
+def set_volume(level):
+    Audio.set_volume(level)
+def get_volume():
+    Audio.get_volume()
+
 def load_song(index, songs):
     
     song = songs[index]

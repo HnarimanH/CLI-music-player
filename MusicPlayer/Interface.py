@@ -44,7 +44,6 @@ class MusicPlayer(MusicPlayerActions, App):
         self.visualizer = self.query_one(AudioVisualizer)
         self.set_interval(1 / 20, self.update_progress)
 
-
 if __name__ == "__main__":
     app = MusicPlayer()
     app.run()
