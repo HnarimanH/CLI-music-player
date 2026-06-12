@@ -7,9 +7,67 @@ THEMES = {
         "accent": "orchid",
         "background": "black",
     },
+    "red": {
+        "accent": "red",
+        "background": "black",
+    },
+    "black": {
+        "accent": "white",
+        "background": "black",
+    },
+    "cyan": {
+        "accent": "cyan",
+        "background": "black",
+    },
+    "magenta": {
+        "accent": "magenta",
+        "background": "black",
+    },
+    "yellow": {
+        "accent": "yellow",
+        "background": "black",
+    },
+    "blue": {
+        "accent": "dodgerblue",
+        "background": "black",
+    },
+    "darkblue": {
+        "accent": "steelblue",
+        "background": "black",
+    },
+    "pink": {
+        "accent": "hotpink",
+        "background": "black",
+    },
+    "orange": {
+        "accent": "orange1",
+        "background": "black",
+    },
+    "teal": {
+        "accent": "turquoise",
+        "background": "black",
+    },
+    "lime": {
+        "accent": "chartreuse1",
+        "background": "black",
+    },
+    "gold": {
+        "accent": "gold1",
+        "background": "black",
+    },
+    "cool": {
+        "accent": "lightcyan",
+        "background": "#1a1a2e",
+    },
+    "warm": {
+        "accent": "lightyellow",
+        "background": "#2a1a0a",
+    },
+    "neon": {
+        "accent": "lime",
+        "background": "#0a0a0a",
+    },
 }
-
-
 def build_css(accent, bg):
     return f"""
     #left_panel {{

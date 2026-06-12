@@ -13,7 +13,7 @@ from themes import get_theme, build_css
 
 
 class MusicPlayer(MusicPlayerActions, App):
-    ui_theme = get_theme("purple")
+    ui_theme = get_theme("red")
     CSS = build_css(ui_theme["accent"], ui_theme["background"])
 
     songsList = musicController.return_library()

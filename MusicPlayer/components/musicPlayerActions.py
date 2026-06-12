@@ -48,22 +48,64 @@ class MusicPlayerActions:
             self.print_to_terminal(f"[red]error: {e}[/red]")
 
     def handle_command(self, cmd: str):
-        if cmd == "next":
+        if cmd == "play":
             self.play_next_song()
         elif cmd == "pause":
             musicController.pause_song()
             self.print_to_terminal("paused.")
-        elif cmd == "resume":
+        elif cmd == "unpause":
             musicController.unpause_song()
             self.print_to_terminal("resumed.")
         elif cmd == "stop":
             musicController.stop_song()
             self.print_to_terminal("stopped.")
+        elif cmd.startswith("volume") or cmd.startswith("vol"):
+            self.handle_volume(cmd)
         elif cmd.startswith("theme"):
-            _, name = cmd.split(maxsplit=1)
-            self.set_theme(name)
+            parts = cmd.split(maxsplit=1)
+            if len(parts) < 2:
+                self.print_to_terminal("[red]usage: theme <name>[/red]")
+            else:
+                self.print_to_terminal(f"[dim]theme will apply on next launch[/dim]")
+                import json
+                with open("config.json", "r") as f:
+                    config = json.load(f)
+                config["theme"] = parts[1]
+                with open("config.json", "w") as f:
+                    json.dump(config, f)
         else:
             self.print_to_terminal(f"[dim]unknown command: {cmd}[/dim]")
+
+    def handle_volume(self, cmd: str):
+        """Handle volume commands: vol, vol up, vol down, vol <0-100>"""
+        parts = cmd.split(maxsplit=1)
+        
+        if len(parts) == 1:
+            # just "vol" or "volume"
+            current = musicController.get_volume()
+            self.print_to_terminal(f"volume: {current}%")
+        elif len(parts) == 2:
+            action = parts[1].lower()
+            current = musicController.get_volume()
+            
+            if action == "up":
+                new_vol = min(100, current + 10)
+                musicController.set_volume(new_vol)
+                self.print_to_terminal(f"volume: {new_vol}%")
+            elif action == "down":
+                new_vol = max(0, current - 10)
+                musicController.set_volume(new_vol)
+                self.print_to_terminal(f"volume: {new_vol}%")
+            else:
+                try:
+                    level = int(action)
+                    if 0 <= level <= 100:
+                        musicController.set_volume(level)
+                        self.print_to_terminal(f"volume: {level}%")
+                    else:
+                        self.print_to_terminal("[red]volume must be 0-100[/red]")
+                except ValueError:
+                    self.print_to_terminal("[red]usage: vol [up|down|0-100][/red]")
 
     def print_to_terminal(self, msg: str):
         self.query_one(MiniTerminal).write(msg)
