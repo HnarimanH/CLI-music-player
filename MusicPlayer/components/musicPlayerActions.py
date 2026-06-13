@@ -2,7 +2,7 @@ import musicController
 from audioEngine import get_position, get_length, song_finished
 from components.nowPlaying import NowPlaying
 from components.miniTerminal import MiniTerminal
-
+import json
 
 class MusicPlayerActions:
     """Mixin for song control logic. Expects self.songsList, self.visualizer, self.progress_bar."""
@@ -19,22 +19,29 @@ class MusicPlayerActions:
         if self.index >= len(self.songsList):
             return
         self.load_and_play(self.index)
+    def play_previous_song(self):
+        self.index -= 1
+        if self.index >= len(self.songsList):
+            return
+        self.load_and_play(self.index)
 
     def update_progress(self) -> None:
         try:
             current = get_position()
             total = get_length()
-
+            if current < 0 or not total or total <= 0:
+                return
             if not total or total <= 0 or not hasattr(self, "visualizer_frames"):
                 return
-
-            frame_index = min(
-                int((current / total) * len(self.visualizer_frames) - 1),
-                len(self.visualizer_frames) - 1
-            )
-            frame_index = max(0, frame_index)  # clamp so it never goes negative
-
-            self.visualizer.update_wave(self.visualizer_frames[frame_index])
+            with open("config.json", "r") as f:
+                config = json.load(f)
+            if config.get("visualizer", True) and hasattr(self, "visualizer"):
+                frame_index = min(
+                    int((current / total) * len(self.visualizer_frames) - 1),
+                    len(self.visualizer_frames) - 1
+                )
+                frame_index = max(0, frame_index)
+                self.visualizer.update_wave(self.visualizer_frames[frame_index])
 
             if current < 0:
                 return
@@ -45,20 +52,21 @@ class MusicPlayerActions:
                 self.play_next_song()
 
         except Exception as e:
-            self.print_to_terminal(f"[red]error: {e}[/red]")
+            print(f"[red]error: {e}[/red]")
 
     def handle_command(self, cmd: str):
-        if cmd == "play":
+        if cmd == "p" or cmd == "previouse" or cmd == "pre":
+            self.print_to_terminal("loading previous song.")
+            self.play_previous_song()
+        elif cmd == "n" or cmd == "next":
+            self.print_to_terminal("loading next song.")
             self.play_next_song()
-        elif cmd == "pause":
+        elif cmd == "s" or cmd == "stop":
             musicController.pause_song()
-            self.print_to_terminal("paused.")
-        elif cmd == "unpause":
+            self.print_to_terminal("stopped.")
+        elif cmd == "r" or cmd == "resume":
             musicController.unpause_song()
             self.print_to_terminal("resumed.")
-        elif cmd == "stop":
-            musicController.stop_song()
-            self.print_to_terminal("stopped.")
         elif cmd.startswith("volume") or cmd.startswith("vol"):
             self.handle_volume(cmd)
         elif cmd.startswith("theme"):
@@ -66,13 +74,44 @@ class MusicPlayerActions:
             if len(parts) < 2:
                 self.print_to_terminal("[red]usage: theme <name>[/red]")
             else:
-                self.print_to_terminal(f"[dim]theme will apply on next launch[/dim]")
-                import json
-                with open("config.json", "r") as f:
-                    config = json.load(f)
-                config["theme"] = parts[1]
-                with open("config.json", "w") as f:
-                    json.dump(config, f)
+                theme_name = parts[1].lower()
+                valid_themes = [
+                    "purple", "green", "red", "cyan", "magenta", "yellow", "blue",
+                    "darkblue", "pink", "orange", "teal", "lime", "gold",
+                    "cool", "warm", "neon"
+                ]
+                
+                if theme_name not in valid_themes:
+                    self.print_to_terminal(f"[red]unknown theme. available: {', '.join(valid_themes)}[/red]")
+                else:
+                    
+                    for t in valid_themes:
+                        self.remove_class(t)
+                    self.add_class(theme_name)
+                    
+                    
+                    with open("config.json", "r") as f:
+                        config = json.load(f)
+                    config["theme"] = theme_name
+                    with open("config.json", "w") as f:
+                        json.dump(config, f)
+                    
+                    self.print_to_terminal(f"[dim]theme set to {theme_name}[/dim]")
+        elif cmd.startswith("vis") or cmd.startswith("visualizer"):
+            parts = cmd.split(maxsplit=1)
+            if len(parts) < 2:
+                self.print_to_terminal("[dim]usage: vis <on|off>[/dim]")
+            else:
+                state = parts[1].lower()
+                if state not in ("on", "off"):
+                    self.print_to_terminal("[red]must be 'on' or 'off'[/red]")
+                else:
+                    with open("config.json", "r") as f:
+                        config = json.load(f)
+                    config["visualizer"] = state == "on"  
+                    with open("config.json", "w") as f:
+                        json.dump(config, f)
+                    self.print_to_terminal(f"[dim]visualizer set to: {state}, changes will apply on next launch[/dim]")
         else:
             self.print_to_terminal(f"[dim]unknown command: {cmd}[/dim]")
 

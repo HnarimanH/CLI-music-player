@@ -16,7 +16,7 @@ while True:
         if os.path.isdir(directory):
 
             with open("config.json", "w") as f:
-                json.dump({"dir": directory}, f)
+                json.dump({"dir": directory,"theme": "black","visualizer":True}, f)
 
             songs_dir = directory
             break
@@ -36,7 +36,6 @@ while True:
 
 songs = filterFormats(songs_dir)
 
-os.system("cls" if os.name == "nt" else "clear")
 
     
     
@@ -67,8 +66,7 @@ def return_library():
         })
     return song_list
         
-    
-    
+
 def play_song(index):
     if index < 1 or index > len(songs):
         print("Invalid song number")
@@ -84,15 +82,21 @@ def stop_song():
 def set_volume(level):
     Audio.set_volume(level)
 def get_volume():
-    Audio.get_volume()
+    return Audio.get_volume()
 
 def load_song(index, songs):
-    
     song = songs[index]
-    ascii_cover = cover_to_ascii(song["cover"],width=72)
-    visualizer_frames = get_audio_wave(song["path"], bars=47)
+    ascii_cover = cover_to_ascii(song["cover"], width=72)
+    
+    with open("config.json", "r") as f:
+        config = json.load(f)
+    
+    visualizer_frames = []
+    if config.get("visualizer", True):
+        visualizer_frames = get_audio_wave(song["path"])
+    
     return {
         "song": song,
         "ascii_cover": ascii_cover,
-        "visualizer_frames": visualizer_frames,
+        "visualizer_frames": visualizer_frames,  # always return it (empty list if off)
     }

@@ -1,5 +1,5 @@
 from textual.widgets import DataTable
-
+from functions.turnicateText import truncate
 
 class SongTable(DataTable):
     def __init__(self, songs_list, **kwargs):
@@ -8,11 +8,17 @@ class SongTable(DataTable):
 
     def on_mount(self) -> None:
         self.cursor_type = "row"
-        self.add_column("Title")
-        self.add_column("Artist")
+        # After creating the DataTable, add columns with widths
+        self.add_column("Title", width=30)
+        self.add_column("Artist", width=20)
+        self.add_column("Album", width=25)
+        self.add_column("Duration", width=10)
 
+        # When adding rows, truncate the long fields
         for song in self.songs_list:
             self.add_row(
-                song["title"],
-                song["artist"],
+                (truncate(song["title"], 30)).strip(),
+                (truncate(song["artist"], 20)).strip(),
+                (truncate(song["album"], 25)).strip(),
+                (song["length"])
             )

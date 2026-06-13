@@ -1,153 +1,144 @@
-THEMES = {
-    "green": {
-        "accent": "lightgreen",
-        "background": "black",
-    },
-    "purple": {
-        "accent": "orchid",
-        "background": "black",
-    },
-    "red": {
-        "accent": "red",
-        "background": "black",
-    },
-    "black": {
-        "accent": "white",
-        "background": "black",
-    },
-    "cyan": {
-        "accent": "cyan",
-        "background": "black",
-    },
-    "magenta": {
-        "accent": "magenta",
-        "background": "black",
-    },
-    "yellow": {
-        "accent": "yellow",
-        "background": "black",
-    },
-    "blue": {
-        "accent": "dodgerblue",
-        "background": "black",
-    },
-    "darkblue": {
-        "accent": "steelblue",
-        "background": "black",
-    },
-    "pink": {
-        "accent": "hotpink",
-        "background": "black",
-    },
-    "orange": {
-        "accent": "orange1",
-        "background": "black",
-    },
-    "teal": {
-        "accent": "turquoise",
-        "background": "black",
-    },
-    "lime": {
-        "accent": "chartreuse1",
-        "background": "black",
-    },
-    "gold": {
-        "accent": "gold1",
-        "background": "black",
-    },
-    "cool": {
-        "accent": "lightcyan",
-        "background": "#1a1a2e",
-    },
-    "warm": {
-        "accent": "lightyellow",
-        "background": "#2a1a0a",
-    },
-    "neon": {
-        "accent": "lime",
-        "background": "#0a0a0a",
-    },
-}
-def build_css(accent, bg):
-    return f"""
-    #left_panel {{
+def build_css():
+    themes = {
+        "purple": {"accent": "orchid", "bg": "black"},
+        "green": {"accent": "lightgreen", "bg": "black"},
+        "red": {"accent": "red", "bg": "black"},
+        "cyan": {"accent": "cyan", "bg": "black"},
+        "magenta": {"accent": "magenta", "bg": "black"},
+        "yellow": {"accent": "yellow", "bg": "black"},
+        "blue": {"accent": "dodgerblue", "bg": "black"},
+        "darkblue": {"accent": "steelblue", "bg": "black"},
+        "pink": {"accent": "hotpink", "bg": "black"},
+        "orange": {"accent": "orange", "bg": "black"},  # was orange1
+        "teal": {"accent": "turquoise", "bg": "black"},
+        "lime": {"accent": "chartreuse", "bg": "black"},  # was chartreuse1
+        "gold": {"accent": "gold", "bg": "black"},  # was gold1
+        "cool": {"accent": "lightcyan", "bg": "#1a1a2e"},
+        "warm": {"accent": "lightyellow", "bg": "#2a1a0a"},
+        "neon": {"accent": "lime", "bg": "#0a0a0a"},
+    }
+    
+    # Base CSS (layout, no colors)
+    base_css = """
+    #left_panel {
         width: 60%;
-    }}
+    }
 
-    #right_panel {{
+    #right_panel {
         width: 40%;
-    }}
+    }
 
-    #song-table {{
-        color:{accent};
-        height:50%;
-        border:round {accent};
-        background:{bg};
-    }}
-
-    #now-playing {{
-        color:{accent};
-        width: 1fr;
-        background: {bg};
-        border: {accent} round;
-        align: center middle;
-        text-align:center;
-    }}
-
-    #AlbumAsciiCover {{
-        color:{accent};
-        content-align: center middle;
-        text-align: center;
-        padding-top:1;
-        padding-left:1;
-    }}
-
-    #SongDetails, #SongProgress, #SongTime {{
-        color:{accent};
-        content-align: center middle;
-        text-align: center;
-    }}
-
-    #audio-visualizer {{
-        color:{accent};
+    #song-table {
         height: 1fr;
-        border: {accent} round;
+        border: round;
+    }
+
+    #now-playing {
+        width: 1fr;
+        border: round;
+        align: center middle;
+        text-align: center;
+    }
+
+    #AlbumAsciiCover {
         content-align: center middle;
-        background:{bg};
-    }}
+        text-align: center;
+        padding-top: 1;
+        padding-left: 1;
+    }
 
-    #terminal {{
+    #SongDetails, #SongProgress, #SongTime {
+        content-align: center middle;
+        text-align: center;
+    }
+
+    #audio-visualizer {
+        height: 1fr;
+        border: round;
+        content-align: center middle;
+    }
+
+    #terminal {
         height: 12;
-        border: round {accent};
-        background: {bg};
+        border: round;
         padding: 0 1;
-    }}
+    }
 
-    #terminal-header {{
-        color: {accent};
+    #terminal-header {
         text-style: bold;
         padding: 0 1;
         height: 1;
-    }}
+    }
 
-    #terminal-log {{
+    #terminal-log {
         height: 1fr;
-        color: {accent};
         scrollbar-size: 1 1;
         background: transparent;
-    }}
+    }
 
-    #terminal-input {{
-        border: tall {accent};
-        background: {bg};
-        color: {accent};
+    #terminal-input {
+        border: tall;
         height: 3;
         margin-top: 1;
-    }}
+    }
 
-    #terminal-input:focus {{
-        border: tall {accent};
-    }}
+    #terminal-input:focus {
+        border: tall;
+    }
     """
-def get_theme(name="green"):
-    return THEMES.get(name, THEMES["green"])
+    
+    # Theme-specific CSS
+    theme_css = ""
+    for name, colors in themes.items():
+        theme_css += f"""
+        .{name} #song-table {{
+            color: {colors['accent']};
+            border: round {colors['accent']};
+            background: {colors['bg']};
+        }}
+
+        .{name} #now-playing {{
+            color: {colors['accent']};
+            background: {colors['bg']};
+            border: round {colors['accent']};
+        }}
+
+        .{name} #AlbumAsciiCover {{
+            color: {colors['accent']};
+        }}
+
+        .{name} #SongDetails, .{name} #SongProgress, .{name} #SongTime {{
+            color: {colors['accent']};
+        }}
+
+        .{name} #audio-visualizer {{
+            color: {colors['accent']};
+            border: round {colors['accent']};
+            background: {colors['bg']};
+        }}
+
+        .{name} #terminal {{
+            border: round {colors['accent']};
+            background: {colors['bg']};
+        }}
+
+        .{name} #terminal-header {{
+            color: {colors['accent']};
+        }}
+
+        .{name} #terminal-log {{
+            color: {colors['accent']};
+        }}
+
+        .{name} #terminal-input {{
+            border: tall {colors['accent']};
+            background: {colors['bg']};
+            color: {colors['accent']};
+        }}
+
+        .{name} #terminal-input:focus {{
+            border: tall {colors['accent']};
+        }}
+        """
+    
+    return base_css + theme_css
