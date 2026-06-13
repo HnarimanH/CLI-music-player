@@ -5,7 +5,7 @@ from library import get_song_info
 from functions.coverToAscii import cover_to_ascii
 from functions.extractAudioWave import get_audio_wave
 import json
-
+import random
 songs_dir = ""
 
 while True:
@@ -16,7 +16,7 @@ while True:
         if os.path.isdir(directory):
 
             with open("config.json", "w") as f:
-                json.dump({"dir": directory,"theme": "black","visualizer":True}, f)
+                json.dump({"dir": directory,"theme": "black","visualizer":True,"shuffle": False, "repeat": False}, f)
 
             songs_dir = directory
             break
@@ -66,13 +66,16 @@ def return_library():
         })
     return song_list
         
-
-def play_song(index):
-    if index < 1 or index > len(songs):
-        print("Invalid song number")
+def shuffle_library(library):
+    shuffled = library.copy()  # don't modify original
+    random.shuffle(shuffled)
+    return shuffled
+def play_song(song_data):
+    """Play a song using its data dict"""
+    if not song_data or "path" not in song_data:
+        print("Invalid song data")
         return
-    selected_song = os.path.join(songs_dir, songs[index - 1])
-    Audio.play_song(selected_song)
+    Audio.play_song(song_data["path"])
 def pause_song():
     Audio.pause_song()
 def unpause_song():

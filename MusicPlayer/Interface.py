@@ -32,7 +32,7 @@ class MusicPlayer(MusicPlayerActions, App):
                 id="left_panel"
             )
         elif config["visualizer"] == False:
-            left_panel = Vertical(
+            left_panel = Horizontal(
                 SongTable(self.songsList),
                 id="left_panel"
             )

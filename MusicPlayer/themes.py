@@ -59,7 +59,7 @@ def build_css():
     }
 
     #terminal {
-        height: 12;
+        height: 20%;
         border: round;
         padding: 0 1;
     }

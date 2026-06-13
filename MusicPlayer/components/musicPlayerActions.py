@@ -11,7 +11,7 @@ class MusicPlayerActions:
         song_data = musicController.load_song(index, songs=self.songsList)
         self.song = song_data["song"]
         self.visualizer_frames = song_data["visualizer_frames"]
-        musicController.play_song(index + 1)
+        musicController.play_song(self.song)
         self.query_one(NowPlaying).update_song(song_data["ascii_cover"], self.song)
 
     def play_next_song(self):
@@ -69,6 +69,27 @@ class MusicPlayerActions:
             self.print_to_terminal("resumed.")
         elif cmd.startswith("volume") or cmd.startswith("vol"):
             self.handle_volume(cmd)
+        elif cmd == "shuffle":
+            self.songsList = musicController.shuffle_library(self.songsList)
+            self.index = 0
+            
+            # Rebuild the SongTable with shuffled data
+            from components.songTable import SongTable
+            song_table = self.query_one(SongTable)
+            song_table.clear()
+            
+            # Re-add all songs in shuffled order
+            for song in self.songsList:
+                # Assuming your SongTable uses these columns, adjust if needed
+                song_table.add_row(
+                    song["title"],
+                    song["artist"],
+                    song["album"],
+                    song["length"]
+                )
+            
+            
+            self.print_to_terminal("[dim]library shuffled[/dim]")
         elif cmd.startswith("theme"):
             parts = cmd.split(maxsplit=1)
             if len(parts) < 2:
@@ -148,3 +169,4 @@ class MusicPlayerActions:
 
     def print_to_terminal(self, msg: str):
         self.query_one(MiniTerminal).write(msg)
+    
