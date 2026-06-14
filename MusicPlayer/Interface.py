@@ -11,7 +11,7 @@ from components.miniTerminal import MiniTerminal
 from components.musicPlayerActions import MusicPlayerActions
 from themes import build_css
 from pynput import keyboard as pynput_keyboard
-import threading
+
 
 class MusicPlayer(MusicPlayerActions, App):
     with open("config.json", "r") as f:
@@ -62,12 +62,7 @@ class MusicPlayer(MusicPlayerActions, App):
     
 
     def _setup_global_hotkeys(self):
-        def log(msg):
-            with open("hotkey_debug.log", "a") as f:
-                f.write(msg + "\n")
-
         def on_press(key):
-            log(f"key pressed: {key}")
             if key == pynput_keyboard.Key.media_next:
                 self.call_from_thread(self.play_next_song)
             elif key == pynput_keyboard.Key.media_previous:
@@ -89,7 +84,7 @@ class MusicPlayer(MusicPlayerActions, App):
         current_theme = config.get("theme", "purple")
         self.add_class(current_theme)
         self.set_interval(1 / 20, self.update_progress)
-        threading.Thread(target=self._setup_global_hotkeys, daemon=True).start()
+        self._setup_global_hotkeys()
     # ═══════════════════════════════════════════════════════════════
     # Key Binding Actions
     # ═══════════════════════════════════════════════════════════════
