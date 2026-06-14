@@ -1,0 +1,26 @@
+[project]
+name = "climusic"
+version = "0.1.0"
+description = "A CLI music player"
+homepage = "https://github.com/yourusername/climusic"
+repository = "https://github.com/yourusername/climusic"
+requires-python = ">=3.10"
+dependencies = [
+    "textual",
+    "pynput",
+    "mutagen",
+    "python-vlc",
+    "librosa",
+    "numpy",
+    "Pillow",
+]
+
+[project.scripts]
+climusic = "climusic.Interface:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+climusic = ["assets/*"]

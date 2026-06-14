@@ -1,5 +1,5 @@
 from textual.widgets import DataTable
-from functions.turnicateText import truncate
+from climusic.functions.turnicateText import truncate
 
 class SongTable(DataTable):
     def __init__(self, songs_list, **kwargs):

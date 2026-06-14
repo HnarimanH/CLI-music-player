@@ -1,14 +1,15 @@
 from textual.containers import Vertical
 from textual.widgets import Static
-from components.songProgress import SongProgress
-from functions.timeConvert import convertToSeconds
-from functions.coverToAscii import cover_to_ascii
+from climusic.components.songProgress import SongProgress
+from climusic.functions.timeConvert import convertToSeconds
+from climusic.functions.coverToAscii import cover_to_ascii
+from importlib import resources
 class NowPlaying(Vertical):
     def __init__(self, **kwargs):
         super().__init__(id="now-playing", **kwargs)
 
     def compose(self):
-        with open("assets/defaultAlbumCover.jpeg", "rb") as f:
+        with resources.files("climusic.assets").joinpath("defaultAlbumCover.jpeg").open("rb") as f:
             cover_data = f.read()
         yield Static( cover_to_ascii(cover_data,width=72), id="AlbumAsciiCover")
         yield Static("Nothing is playing", id="SongDetails")

@@ -1,40 +1,43 @@
-import audioEngine as Audio
+import climusic.audioEngine as Audio
 import os
-from functions.filterFormats import filterFormats
-from library import get_song_info
-from functions.coverToAscii import cover_to_ascii
-from functions.extractAudioWave import get_audio_wave
+from climusic.functions.filterFormats import filterFormats
+from climusic.library import get_song_info
+from climusic.functions.coverToAscii import cover_to_ascii
+from climusic.functions.extractAudioWave import get_audio_wave
 import json
 import random
-songs_dir = ""
+from pathlib import Path
 
-while True:
-    if not os.path.exists("config.json"):
+# One place for everything
+APP_DIR = Path.home() / ".climusic"
+APP_DIR.mkdir(exist_ok=True)
+CONFIG_PATH = APP_DIR / "config.json"
+PLAYLISTS_FILE = APP_DIR / "playlists.json"
+songs = []
 
-        directory = input("Please enter your music directory path: ")
+def init_library():
+    global songs
+    songs = filterFormats(songs_dir)
 
-        if os.path.isdir(directory):
-
-            with open("config.json", "w") as f:
-                json.dump({"dir": directory,"theme": "black","visualizer":True,"shuffle": False, "repeat": False}, f)
-
-            songs_dir = directory
-            break
-
+def init_config():
+    global songs_dir
+    while True:
+        if not CONFIG_PATH.exists():
+            directory = input("Please enter your music directory path: ")
+            if os.path.isdir(directory):
+                with open(CONFIG_PATH, "w") as f:
+                    json.dump({"dir": directory, "theme": "black", "visualizer": True, "shuffle": False, "repeat": False}, f)
+                songs_dir = directory
+                break
+            else:
+                print("Invalid directory")
         else:
-            print("Invalid directory")
-
-    else:
-
-        with open("config.json", "r") as f:
-            data = json.load(f)
-
-        songs_dir = data["dir"]
-        break
-
-
-
-songs = filterFormats(songs_dir)
+            with open(CONFIG_PATH, "r") as f:
+                data = json.load(f)
+            songs_dir = data["dir"]
+            break
+    
+    init_library()
 
 
     
@@ -92,7 +95,7 @@ def load_song(index, songs):
     cover_data = get_song_info(song["path"])["cover"]
     ascii_cover = cover_to_ascii(cover_data, width=72)
     
-    with open("config.json", "r") as f:
+    with open(CONFIG_PATH, "r") as f:
         config = json.load(f)
     
     visualizer_frames = []
@@ -106,18 +109,6 @@ def load_song(index, songs):
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-PLAYLISTS_FILE = "playlists.json"
 
 
 

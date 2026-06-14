@@ -1,11 +1,10 @@
-import musicController
-from audioEngine import get_position, get_length, song_finished
-from components.nowPlaying import NowPlaying
-from components.miniTerminal import MiniTerminal
+from climusic import musicController
+from climusic.audioEngine import get_position, get_length, song_finished
+from climusic.components.nowPlaying import NowPlaying
+from climusic.components.miniTerminal import MiniTerminal
 import json
-from components.songTable import SongTable
-from library import get_song_info
-
+from climusic.components.songTable import SongTable
+from climusic.musicController import PLAYLISTS_FILE, CONFIG_PATH
 class MusicPlayerActions:
     """
     Mixin for song control logic and command handling.
@@ -70,7 +69,7 @@ class MusicPlayerActions:
                 return
             
             # Update visualizer if enabled
-            with open("config.json", "r") as f:
+            with open(CONFIG_PATH, "r") as f:
                 config = json.load(f)
             if config.get("visualizer", True) and hasattr(self, "visualizer"):
                 frame_index = min(
@@ -252,10 +251,10 @@ class MusicPlayerActions:
         self.add_class(theme_name)
         
         # Save preference
-        with open("config.json", "r") as f:
+        with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
         config["theme"] = theme_name
-        with open("config.json", "w") as f:
+        with open(CONFIG_PATH, "w") as f:
             json.dump(config, f)
         
         self.print_to_terminal(f"[dim]theme set to {theme_name}[/dim]")
@@ -276,10 +275,10 @@ class MusicPlayerActions:
             self.print_to_terminal("[red]must be 'on' or 'off'[/red]")
             return
         
-        with open("config.json", "r") as f:
+        with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
         config["visualizer"] = state == "on"
-        with open("config.json", "w") as f:
+        with open(CONFIG_PATH, "w") as f:
             json.dump(config, f)
         
         self.print_to_terminal(f"[dim]visualizer set to: {state}, changes will apply on next launch[/dim]")

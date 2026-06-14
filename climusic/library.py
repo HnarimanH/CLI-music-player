@@ -1,5 +1,7 @@
 from mutagen import File
 from mutagen.id3 import ID3, ID3NoHeaderError
+from importlib import resources
+
 
 def get_song_info(path):
     try:
@@ -12,7 +14,7 @@ def get_song_info(path):
         print(f"Skipping {path}: {e}")
         return None
 
-    with open("assets/defaultAlbumCover.jpeg", "rb") as f:
+    with resources.files("climusic.assets").joinpath("defaultAlbumCover.jpeg").open("rb") as f:
         cover_data = f.read()
 
     try:

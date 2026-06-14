@@ -1,17 +1,17 @@
-import musicController
+from climusic import musicController
 from textual.app import App, ComposeResult, Binding
 from textual.widgets import Header, DataTable
 from textual.containers import Horizontal, Vertical
 import json
-from components.audioVisualizer import AudioVisualizer
-from components.songTable import SongTable
-from components.nowPlaying import NowPlaying
-from components.songProgress import SongProgress
-from components.miniTerminal import MiniTerminal
-from components.musicPlayerActions import MusicPlayerActions
-from themes import build_css
+from climusic.components.audioVisualizer import AudioVisualizer
+from climusic.components.songTable import SongTable
+from climusic.components.nowPlaying import NowPlaying
+from climusic.components.songProgress import SongProgress
+from climusic.components.miniTerminal import MiniTerminal
+from climusic.components.musicPlayerActions import MusicPlayerActions
+from climusic.themes import build_css
 from pynput import keyboard as pynput_keyboard
-
+from climusic.musicController import CONFIG_PATH
 try:
     import vlc
 except Exception:
@@ -21,18 +21,15 @@ except Exception:
     print("Linux: sudo apt install vlc")
     exit(1)
 
-class MusicPlayer(MusicPlayerActions, App):
-    with open("config.json", "r") as f:
-        config = json.load(f)
-
+class Main(MusicPlayerActions, App):
     CSS = build_css()
 
     BINDINGS = [
-        Binding("space", "toggle_pause", "Pause/Resume", priority=True),
-        Binding("period", "next_song", "Next", priority=True),  
-        Binding("comma", "prev_song", "Previous", priority=True),
-        Binding("right_square_bracket", "vol_up", "Vol Up", priority=True),
-        Binding("left_square_bracket", "vol_down", "Vol Down", priority=True),
+        Binding("space", "action_toggle_pause", "Pause/Resume", priority=True),
+        Binding("period", "action_next_song", "Next", priority=True),  
+        Binding("comma", "action_prev_song", "Previous", priority=True),
+        Binding("right_square_bracket", "action_vol_up", "Vol Up", priority=True),
+        Binding("left_square_bracket", "action_vol_down", "Vol Down", priority=True),
     ]
 
     allSongs = musicController.return_library()
@@ -40,9 +37,9 @@ class MusicPlayer(MusicPlayerActions, App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with open("config.json", "r") as f:
+        with open(musicController.CONFIG_PATH, "r") as f:  
             config = json.load(f)
-        if config["visualizer"] == True:
+        if config["visualizer"]:
             left_panel = Vertical(
                 SongTable(self.songsList),
                 AudioVisualizer(),
@@ -85,7 +82,7 @@ class MusicPlayer(MusicPlayerActions, App):
     def on_mount(self) -> None:
         self.progress_bar = self.query_one(SongProgress)
         self.is_paused = False
-        with open("config.json", "r") as f:
+        with open(musicController.CONFIG_PATH, "r") as f:  # Load here
             config = json.load(f)
         if config["visualizer"] == True:
             self.visualizer = self.query_one(AudioVisualizer)
@@ -125,7 +122,11 @@ class MusicPlayer(MusicPlayerActions, App):
         new_vol = max(0, musicController.get_volume() - 10)
         musicController.set_volume(new_vol)
         self.print_to_terminal(f"[dim]vol: {new_vol}%[/dim]")
+def main():
+    musicController.init_config()  
+    app = Main()
+    app.run()
+    
 
 if __name__ == "__main__":
-    app = MusicPlayer()
-    app.run()
+    main()
