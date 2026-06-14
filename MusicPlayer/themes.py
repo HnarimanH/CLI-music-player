@@ -77,13 +77,13 @@ def build_css():
     }
 
     #terminal-input {
-        border: tall;
+       
         height: 3;
         margin-top: 1;
     }
 
     #terminal-input:focus {
-        border: tall;
+        
     }
     """
     

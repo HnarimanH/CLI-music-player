@@ -39,3 +39,4 @@ def get_song_info(path):
         "length": f"{length_seconds // 60}:{length_seconds % 60:02d}",
         "cover": cover_data
     }
+

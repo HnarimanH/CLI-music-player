@@ -3,11 +3,21 @@ from audioEngine import get_position, get_length, song_finished
 from components.nowPlaying import NowPlaying
 from components.miniTerminal import MiniTerminal
 import json
+from components.songTable import SongTable
+from library import get_song_info
 
 class MusicPlayerActions:
-    """Mixin for song control logic. Expects self.songsList, self.visualizer, self.progress_bar."""
+    """
+    Mixin for song control logic and command handling.
+    Expects: self.songsList, self.visualizer, self.progress_bar
+    """
 
+    # ═══════════════════════════════════════════════════════════════
+    # Song Playback & Navigation
+    # ═══════════════════════════════════════════════════════════════
+    is_paused = False
     def load_and_play(self, index: int):
+        """Load song at index and start playback"""
         song_data = musicController.load_song(index, songs=self.songsList)
         self.song = song_data["song"]
         self.visualizer_frames = song_data["visualizer_frames"]
@@ -15,24 +25,51 @@ class MusicPlayerActions:
         self.query_one(NowPlaying).update_song(song_data["ascii_cover"], self.song)
 
     def play_next_song(self):
+        """Skip to next song in playlist"""
         self.index += 1
         if self.index >= len(self.songsList):
             return
         self.load_and_play(self.index)
+
     def play_previous_song(self):
+        """Go back to previous song in playlist"""
         self.index -= 1
-        if self.index >= len(self.songsList):
+        if self.index < 0:  
+            self.index = 0
             return
         self.load_and_play(self.index)
 
+
+    def action_toggle_pause(self):
+        """Toggle play/pause state"""
+        if self.is_paused:
+            musicController.unpause_song()
+            self.print_to_terminal("resumed.")
+        else:
+            musicController.pause_song()
+            self.print_to_terminal("paused.")
+        self.is_paused = not self.is_paused
+    # ═══════════════════════════════════════════════════════════════
+    # Progress & Visualization Updates
+    # ═══════════════════════════════════════════════════════════════
+
     def update_progress(self) -> None:
+        """
+        Called every ~50ms to update:
+        - Audio visualizer frame
+        - Progress bar position
+        - Auto-play next song when finished
+        """
         try:
             current = get_position()
             total = get_length()
+            
             if current < 0 or not total or total <= 0:
                 return
             if not total or total <= 0 or not hasattr(self, "visualizer_frames"):
                 return
+            
+            # Update visualizer if enabled
             with open("config.json", "r") as f:
                 config = json.load(f)
             if config.get("visualizer", True) and hasattr(self, "visualizer"):
@@ -46,102 +83,303 @@ class MusicPlayerActions:
             if current < 0:
                 return
 
+            # Update progress bar
             self.progress_bar.update_progress(current, total)
 
+            # Auto-advance to next song
             if song_finished():
                 self.play_next_song()
 
         except Exception as e:
             print(f"[red]error: {e}[/red]")
 
+    # ═══════════════════════════════════════════════════════════════
+    # Command Routing & Handling
+    # ═══════════════════════════════════════════════════════════════
+
     def handle_command(self, cmd: str):
-        if cmd == "p" or cmd == "previouse" or cmd == "pre":
+        """Main command dispatcher"""
+        cmd = cmd.strip().lower()
+        parts = cmd.split()
+
+        if not parts:
+            return
+
+        base = parts[0]
+
+        if base in ("man", "help", "?"):
+            self._handle_help(cmd)
+        elif base == "prev":
             self.print_to_terminal("loading previous song.")
             self.play_previous_song()
-        elif cmd == "n" or cmd == "next":
+        elif base == "next":
             self.print_to_terminal("loading next song.")
             self.play_next_song()
-        elif cmd == "s" or cmd == "stop":
+        elif base == "pause":
             musicController.pause_song()
-            self.print_to_terminal("stopped.")
-        elif cmd == "r" or cmd == "resume":
+            self.print_to_terminal("paused.")
+        elif base == "resume":
             musicController.unpause_song()
             self.print_to_terminal("resumed.")
-        elif cmd.startswith("volume") or cmd.startswith("vol"):
+        elif base == "vol":
             self.handle_volume(cmd)
-        elif cmd == "shuffle":
-            self.songsList = musicController.shuffle_library(self.songsList)
-            self.index = 0
-            
-            # Rebuild the SongTable with shuffled data
-            from components.songTable import SongTable
-            song_table = self.query_one(SongTable)
-            song_table.clear()
-            
-            # Re-add all songs in shuffled order
-            for song in self.songsList:
-                # Assuming your SongTable uses these columns, adjust if needed
-                song_table.add_row(
-                    song["title"],
-                    song["artist"],
-                    song["album"],
-                    song["length"]
-                )
-            
-            
-            self.print_to_terminal("[dim]library shuffled[/dim]")
-        elif cmd.startswith("theme"):
-            parts = cmd.split(maxsplit=1)
-            if len(parts) < 2:
-                self.print_to_terminal("[red]usage: theme <name>[/red]")
-            else:
-                theme_name = parts[1].lower()
-                valid_themes = [
-                    "purple", "green", "red", "cyan", "magenta", "yellow", "blue",
-                    "darkblue", "pink", "orange", "teal", "lime", "gold",
-                    "cool", "warm", "neon"
-                ]
-                
-                if theme_name not in valid_themes:
-                    self.print_to_terminal(f"[red]unknown theme. available: {', '.join(valid_themes)}[/red]")
-                else:
-                    
-                    for t in valid_themes:
-                        self.remove_class(t)
-                    self.add_class(theme_name)
-                    
-                    
-                    with open("config.json", "r") as f:
-                        config = json.load(f)
-                    config["theme"] = theme_name
-                    with open("config.json", "w") as f:
-                        json.dump(config, f)
-                    
-                    self.print_to_terminal(f"[dim]theme set to {theme_name}[/dim]")
-        elif cmd.startswith("vis") or cmd.startswith("visualizer"):
-            parts = cmd.split(maxsplit=1)
-            if len(parts) < 2:
-                self.print_to_terminal("[dim]usage: vis <on|off>[/dim]")
-            else:
-                state = parts[1].lower()
-                if state not in ("on", "off"):
-                    self.print_to_terminal("[red]must be 'on' or 'off'[/red]")
-                else:
-                    with open("config.json", "r") as f:
-                        config = json.load(f)
-                    config["visualizer"] = state == "on"  
-                    with open("config.json", "w") as f:
-                        json.dump(config, f)
-                    self.print_to_terminal(f"[dim]visualizer set to: {state}, changes will apply on next launch[/dim]")
+        elif base == "shuffle":
+            self._handle_shuffle()
+        elif base == "theme":
+            self._handle_theme(cmd)
+        elif base == "vis":
+            self._handle_visualizer(cmd)
+        elif base == "ls":
+            self.handle_playlist(cmd)
+        elif base == "cd":
+            self.handle_playlist(cmd)
+        elif base == "mkdir":
+            self.handle_playlist(cmd)
+        elif base == "cp":
+            self.handle_playlist(cmd)
+        elif base == "rm":
+            self.handle_playlist(cmd)
         else:
-            self.print_to_terminal(f"[dim]unknown command: {cmd}[/dim]")
+            self.print_to_terminal(f"[dim]command not found: {base}[/dim]")
+
+
+
+    # ═══════════════════════════════════════════════════════════════
+    # Help & Documentation
+    # ═══════════════════════════════════════════════════════════════
+
+    def _handle_help(self, cmd: str):
+        parts = cmd.split(maxsplit=1)
+        topic = parts[1].lower() if len(parts) > 1 else None
+
+        help_text = {
+            "playback": [
+                "[bold cyan]Playback[/bold cyan]",
+                "  [yellow]next[/yellow]             play next song",
+                "  [yellow]prev[/yellow]             play previous song",
+                "  [yellow]pause[/yellow]            pause playback",
+                "  [yellow]resume[/yellow]           resume playback",
+            ],
+            "volume": [
+                "[bold cyan]Volume[/bold cyan]",
+                "  [yellow]vol[/yellow]              show current volume",
+                "  [yellow]vol up[/yellow]           increase by 10%",
+                "  [yellow]vol down[/yellow]         decrease by 10%",
+                "  [yellow]vol 50[/yellow]           set to 50%",
+            ],
+            "library": [
+                "[bold cyan]Library[/bold cyan]",
+                "  [yellow]ls[/yellow]               list all playlists",
+                "  [yellow]ls songs[/yellow]         list all songs",
+                "  [yellow]cd <name>[/yellow]        load playlist",
+                "  [yellow]cd ..[/yellow]            back to full library",
+                "  [yellow]mkdir <name>[/yellow]     create playlist",
+                "  [yellow]cp . <name>[/yellow]      add current song to playlist",
+                "  [yellow]rm <name>[/yellow]        delete playlist",
+                "  [yellow]shuffle[/yellow]          randomize song order",
+            ],
+            "appearance": [
+                "[bold cyan]Appearance[/bold cyan]",
+                "  [yellow]theme <name>[/yellow]     change theme (live)",
+                "  [yellow]vis on/off[/yellow]       toggle visualizer",
+            ],
+            "themes": [
+                "[bold cyan]Available Themes[/bold cyan]",
+                "  purple  green  red  cyan  magenta  yellow  blue",
+                "  darkblue  pink  orange  teal  lime  gold",
+                "  cool  warm  neon",
+            ]
+        }
+
+        if topic is None:
+            self.print_to_terminal("[bold]help/man <topic> for details[/bold]")
+            for section in help_text.keys():
+                self.print_to_terminal(f"  • {section}")
+        elif topic in help_text:
+            for line in help_text[topic]:
+                self.print_to_terminal(line)
+        else:
+            self.print_to_terminal(f"[red]no manual entry for: {topic}[/red]")
+            self.print_to_terminal("[dim]topics: " + ", ".join(help_text.keys()) + "[/dim]")
+
+    # ───────────────────────────────────────────────────────────────
+    # Shuffle
+    # ───────────────────────────────────────────────────────────────
+
+    def _handle_shuffle(self):
+        """Shuffle current playlist and rebuild table"""
+        self.songsList = musicController.shuffle_library(self.songsList)
+        self.index = 0
+        
+        song_table = self.query_one(SongTable)
+        song_table.clear()
+        for song in self.songsList:
+            song_table.add_row(
+                song["title"],
+                song["artist"],
+                song["album"],
+                song["length"]
+            )
+        
+        self.load_and_play(self.index)
+        self.print_to_terminal("[dim]library shuffled[/dim]")
+
+    # ───────────────────────────────────────────────────────────────
+    # Theme Management
+    # ───────────────────────────────────────────────────────────────
+
+    def _handle_theme(self, cmd: str):
+        """Change app theme (live update)"""
+        parts = cmd.split(maxsplit=1)
+        if len(parts) < 2:
+            self.print_to_terminal("[red]usage: theme <name>[/red]")
+            return
+        
+        theme_name = parts[1].lower()
+        valid_themes = [
+            "purple", "green", "red", "cyan", "magenta", "yellow", "blue",
+            "darkblue", "pink", "orange", "teal", "lime", "gold",
+            "cool", "warm", "neon"
+        ]
+        
+        if theme_name not in valid_themes:
+            self.print_to_terminal(f"[red]unknown theme. available: {', '.join(valid_themes)}[/red]")
+            return
+        
+        # Swap theme class
+        for t in valid_themes:
+            self.remove_class(t)
+        self.add_class(theme_name)
+        
+        # Save preference
+        with open("config.json", "r") as f:
+            config = json.load(f)
+        config["theme"] = theme_name
+        with open("config.json", "w") as f:
+            json.dump(config, f)
+        
+        self.print_to_terminal(f"[dim]theme set to {theme_name}[/dim]")
+
+    # ───────────────────────────────────────────────────────────────
+    # Visualizer Toggle
+    # ───────────────────────────────────────────────────────────────
+
+    def _handle_visualizer(self, cmd: str):
+        """Toggle visualizer on/off (applies on next launch)"""
+        parts = cmd.split(maxsplit=1)
+        if len(parts) < 2:
+            self.print_to_terminal("[dim]usage: vis <on|off>[/dim]")
+            return
+        
+        state = parts[1].lower()
+        if state not in ("on", "off"):
+            self.print_to_terminal("[red]must be 'on' or 'off'[/red]")
+            return
+        
+        with open("config.json", "r") as f:
+            config = json.load(f)
+        config["visualizer"] = state == "on"
+        with open("config.json", "w") as f:
+            json.dump(config, f)
+        
+        self.print_to_terminal(f"[dim]visualizer set to: {state}, changes will apply on next launch[/dim]")
+
+    # ═══════════════════════════════════════════════════════════════
+    # Playlist Management
+    # ═══════════════════════════════════════════════════════════════
+
+    def handle_playlist(self, cmd: str):
+        parts = cmd.split(maxsplit=2)
+        base = parts[0]
+
+        if base == "ls":
+            if len(parts) == 1:
+                # list playlists
+                playlists = musicController.get_playlists()
+                if not playlists:
+                    self.print_to_terminal("[dim]no playlists[/dim]")
+                else:
+                    for name in playlists:
+                        self.print_to_terminal(f"  [cyan]d[/cyan]  {name}/")
+            elif parts[1] == "songs":
+                for song in self.songsList:
+                    self.print_to_terminal(f"  {song['title']} — {song['artist']}")
+
+        elif base == "cd":
+            if len(parts) < 2:
+                self.print_to_terminal("[red]usage: cd <playlist> | cd ..[/red]")
+                return
+            if parts[1] == "..":
+                # back to full library
+                self.songsList = self.allSongs
+                self.index = 0
+                self.query_one(SongTable).clear()
+                for song in self.allSongs:
+                    self.query_one(SongTable).add_row(
+                        song["title"], song["artist"], song["album"], song["length"]
+                    )
+                self.load_and_play(0)
+                self.print_to_terminal("[dim]~ back to library[/dim]")
+            else:
+                songs = musicController.load_playlist(parts[1])
+                if songs:
+                    self.songsList = songs
+                    self.index = 0
+                    self.query_one(SongTable).clear()
+                    for song in songs:
+                        self.query_one(SongTable).add_row(
+                            song["title"], song["artist"], song["album"], song["length"]
+                        )
+                    self.load_and_play(0)
+                    self.print_to_terminal(f"[dim]~/{parts[1]} ({len(songs)} songs)[/dim]")
+                else:
+                    self.print_to_terminal(f"[red]cd: {parts[1]}: no such playlist[/red]")
+
+        elif base == "mkdir":
+            if len(parts) < 2:
+                self.print_to_terminal("[red]usage: mkdir <name>[/red]")
+                return
+            if musicController.create_playlist(parts[1]):
+                self.print_to_terminal(f"[dim]created playlist '{parts[1]}'[/dim]")
+            else:
+                self.print_to_terminal(f"[red]mkdir: {parts[1]}: already exists[/red]")
+
+        elif base == "cp":
+            # cp . <playlist>
+            if len(parts) < 3 or parts[1] != ".":
+                self.print_to_terminal("[red]usage: cp . <playlist>[/red]")
+                return
+            if hasattr(self, "song"):
+                song_to_save = {k: self.song[k] for k in ("title", "artist", "album", "length", "path", "filename")}
+                if musicController.add_to_playlist(parts[2], song_to_save):
+                    self.print_to_terminal(f"[dim]'{self.song['title']}' → {parts[2]}[/dim]")
+                else:
+                    self.print_to_terminal(f"[red]cp: {parts[2]}: no such playlist[/red]")
+            else:
+                self.print_to_terminal("[red]cp: no song loaded[/red]")
+
+        elif base == "rm":
+            if len(parts) < 2:
+                self.print_to_terminal("[red]usage: rm <playlist>[/red]")
+                return
+            if musicController.delete_playlist(parts[1]):
+                self.print_to_terminal(f"[dim]removed '{parts[1]}'[/dim]")
+            else:
+                self.print_to_terminal(f"[red]rm: {parts[1]}: no such playlist[/red]")
+
+    # ═══════════════════════════════════════════════════════════════
+    # Volume Control
+    # ═══════════════════════════════════════════════════════════════
 
     def handle_volume(self, cmd: str):
-        """Handle volume commands: vol, vol up, vol down, vol <0-100>"""
+        """
+        Handle volume adjustments
+        Usage: vol [up|down|0-100]
+        """
         parts = cmd.split(maxsplit=1)
         
         if len(parts) == 1:
-            # just "vol" or "volume"
+            # Show current volume
             current = musicController.get_volume()
             self.print_to_terminal(f"volume: {current}%")
         elif len(parts) == 2:
@@ -167,6 +405,10 @@ class MusicPlayerActions:
                 except ValueError:
                     self.print_to_terminal("[red]usage: vol [up|down|0-100][/red]")
 
+    # ═══════════════════════════════════════════════════════════════
+    # Utility
+    # ═══════════════════════════════════════════════════════════════
+
     def print_to_terminal(self, msg: str):
+        """Write message to mini terminal widget"""
         self.query_one(MiniTerminal).write(msg)
-    

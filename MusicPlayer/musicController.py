@@ -89,7 +89,8 @@ def get_volume():
 
 def load_song(index, songs):
     song = songs[index]
-    ascii_cover = cover_to_ascii(song["cover"], width=72)
+    cover_data = get_song_info(song["path"])["cover"]
+    ascii_cover = cover_to_ascii(cover_data, width=72)
     
     with open("config.json", "r") as f:
         config = json.load(f)
@@ -103,3 +104,63 @@ def load_song(index, songs):
         "ascii_cover": ascii_cover,
         "visualizer_frames": visualizer_frames,  # always return it (empty list if off)
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+PLAYLISTS_FILE = "playlists.json"
+
+
+
+def get_playlists():
+    """Load all playlists"""
+    if not os.path.exists(PLAYLISTS_FILE):
+        return {}
+    with open(PLAYLISTS_FILE, "r") as f:
+        return json.load(f)
+
+def save_playlists(playlists):
+    """Save playlists"""
+    with open(PLAYLISTS_FILE, "w") as f:
+        json.dump(playlists, f, indent=2)
+
+def create_playlist(name):
+    """Create new playlist"""
+    playlists = get_playlists()
+    if name in playlists:
+        return False  # already exists
+    playlists[name] = []
+    save_playlists(playlists)
+    return True
+
+def add_to_playlist(playlist_name, song):
+    """Add song to playlist"""
+    playlists = get_playlists()
+    if playlist_name not in playlists:
+        return False
+    playlists[playlist_name].append(song)
+    save_playlists(playlists)
+    return True
+
+def load_playlist(playlist_name):
+    """Get songs from playlist"""
+    playlists = get_playlists()
+    return playlists.get(playlist_name, [])
+
+def delete_playlist(playlist_name):
+    """Delete entire playlist"""
+    playlists = get_playlists()
+    if playlist_name in playlists:
+        del playlists[playlist_name]
+        save_playlists(playlists)
+        return True
+    return False

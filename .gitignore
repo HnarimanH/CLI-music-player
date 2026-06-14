@@ -34,7 +34,7 @@ dist/
 .textual/
 
 # Configs you don't want public
-config.json
+*.json
 
 # Audio cache / generated assets
 cache/
