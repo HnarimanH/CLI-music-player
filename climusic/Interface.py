@@ -12,6 +12,14 @@ from components.musicPlayerActions import MusicPlayerActions
 from themes import build_css
 from pynput import keyboard as pynput_keyboard
 
+try:
+    import vlc
+except Exception:
+    print("❌ VLC not found!")
+    print("Install VLC from https://www.videolan.org then try again.")
+    print("Mac: brew install vlc")
+    print("Linux: sudo apt install vlc")
+    exit(1)
 
 class MusicPlayer(MusicPlayerActions, App):
     with open("config.json", "r") as f:
