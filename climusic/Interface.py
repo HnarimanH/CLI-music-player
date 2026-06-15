@@ -22,16 +22,19 @@ except Exception:
     exit(1)
 
 class Main(MusicPlayerActions, App):
+    allSongs = []
     songsList = []
 
     CSS = build_css()
 
     BINDINGS = [
         Binding("space", "toggle_pause", "Pause/Resume", priority=True),
-        Binding("period", "next_song", "Next", priority=True),
-        Binding("comma", "prev_song", "Previous", priority=True),
-        Binding("right_square_bracket", "vol_up", "Vol Up", priority=True),
-        Binding("left_square_bracket", "vol_down", "Vol Down", priority=True),
+        Binding("d", "next_song", "Next", priority=True),
+        Binding("a", "prev_song", "Previous", priority=True),
+        Binding("w", "vol_up", "Vol Up", priority=True),
+        Binding("s", "vol_down", "Vol Down", priority=True),
+        Binding("q", "back_song", "Back", priority=True),
+        Binding("e", "forward_song", "Forward", priority=True),
     ]
 
     def compose(self) -> ComposeResult:
@@ -39,23 +42,25 @@ class Main(MusicPlayerActions, App):
         with open(musicController.CONFIG_PATH, "r") as f:
             config = json.load(f)
         if config["visualizer"]:
-            left_panel = Vertical(
-                SongTable(),
-                AudioVisualizer(),
-                id="left_panel"
-            )
-        else:
-            left_panel = Horizontal(
-                SongTable(),
-                id="left_panel"
-            )
-        yield Horizontal(
-            left_panel,
-            Vertical(
+            right_panel = Vertical(
                 NowPlaying(),
-                MiniTerminal(id="terminal"),
+                AudioVisualizer(),
+               
                 id="right_panel"
             )
+        else:
+            right_panel = Horizontal(
+                NowPlaying(),
+                id="right_panel"
+            )
+        
+        yield Horizontal(
+            Vertical(
+                SongTable(),
+                MiniTerminal(id="terminal"),
+                id="left_panel"
+            ),
+            right_panel
         )
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
@@ -77,7 +82,8 @@ class Main(MusicPlayerActions, App):
         listener.start()
 
     def on_mount(self) -> None:
-        self.songsList = musicController.return_library()
+        self.allSongs = musicController.return_library()
+        self.songsList = self.allSongs.copy()
         self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
         self.is_paused = False
@@ -112,6 +118,16 @@ class Main(MusicPlayerActions, App):
         self.print_to_terminal("[dim]prev.[/dim]")
         self.is_paused = False
         self.play_previous_song()
+    
+    def action_forward_song(self) -> None:
+        self.print_to_terminal("[dim]forward.[/dim]")
+        self.is_paused = False
+        self.forward_song()
+
+    def action_back_song(self) -> None:
+        self.print_to_terminal("[dim]back.[/dim]")
+        self.is_paused = False
+        self.back_song()
 
     def action_vol_up(self) -> None:
         new_vol = min(100, musicController.get_volume() + 10)

@@ -1,3 +1,5 @@
+from logging import config
+
 from climusic import musicController
 from climusic.audioEngine import get_position, get_length, song_finished
 from climusic.components.nowPlaying import NowPlaying
@@ -25,6 +27,11 @@ class MusicPlayerActions:
 
     def play_next_song(self):
         """Skip to next song in playlist"""
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+        if config["repeat"] == True:
+            self.load_and_play(self.index)
+            return
         self.index += 1
         if self.index >= len(self.songsList):
             return
@@ -48,6 +55,34 @@ class MusicPlayerActions:
             musicController.pause_song()
             self.print_to_terminal("paused.")
         self.is_paused = not self.is_paused
+
+    def forward_song(self):
+        if song_finished():
+            self.play_next_song()
+            return
+        
+        current = get_position()
+        total = get_length()
+        
+        if current < 0 or not total or total <= 0:
+            return
+        
+        new_position = min(current + 5, total)
+        musicController.set_position(new_position)
+
+    def back_song(self):
+        
+        current = get_position()
+        total = get_length()
+        if current < 0 or not total or total <= 0:
+            musicController.set_position(0)
+            return
+        
+        new_position = max(current - 5, 0)
+        musicController.set_position(new_position)
+
+
+    
     # ═══════════════════════════════════════════════════════════════
     # Progress & Visualization Updates
     # ═══════════════════════════════════════════════════════════════
@@ -120,6 +155,8 @@ class MusicPlayerActions:
         elif base == "resume":
             musicController.unpause_song()
             self.print_to_terminal("resumed.")
+        elif base == "repeat":
+            self._handle_repeat()
         elif base == "vol":
             self.handle_volume(cmd)
         elif base == "shuffle":
@@ -200,6 +237,27 @@ class MusicPlayerActions:
         else:
             self.print_to_terminal(f"[red]no manual entry for: {topic}[/red]")
             self.print_to_terminal("[dim]topics: " + ", ".join(help_text.keys()) + "[/dim]")
+    # ───────────────────────────────────────────────────────────────
+    # Handle repeat
+    # ───────────────────────────────────────────────────────────────
+    def _handle_repeat(self):
+        """Restart current song from the beginning"""
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+
+        if config["repeat"] == True:
+
+            config["repeat"] = False
+            with open(CONFIG_PATH, "w") as f:                
+                json.dump(config, f)
+            
+        else:
+
+            config["repeat"] = True
+            with open(CONFIG_PATH, "w") as f:                
+                json.dump(config, f)
+        self.print_to_terminal(f"[dim]repeat :{config['repeat']}.[/dim]")
+        
 
     # ───────────────────────────────────────────────────────────────
     # Shuffle
@@ -309,7 +367,9 @@ class MusicPlayerActions:
                 self.print_to_terminal("[red]usage: cd <playlist> | cd ..[/red]")
                 return
             if parts[1] == "..":
-                # back to full library
+                if not hasattr(self, 'allSongs'):
+                    
+                    return  # nothing to go back to
                 self.songsList = self.allSongs
                 self.index = 0
                 self.query_one(SongTable).clear()

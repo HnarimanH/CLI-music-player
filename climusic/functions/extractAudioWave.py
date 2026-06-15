@@ -2,7 +2,7 @@ import librosa
 import numpy as np
 
 
-def get_audio_wave(path, hopLength=512, bars=60):
+def get_audio_wave(path, hopLength=4056, bars=60):
     y, sr = librosa.load(path, sr=None, mono=True)
     y = y.astype(np.float32)
     stft = librosa.stft(

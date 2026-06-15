@@ -26,9 +26,9 @@ songs_dir = ""
 def init_library():
     global songs
     songs = filterFormats(songs_dir)
-    debug_log(f"Loading from: {songs_dir}")
+    
     songs = filterFormats(songs_dir)
-    debug_log(f"Found {len(songs)} files: {songs}")
+    
 
 def init_config():
     global songs_dir
@@ -55,11 +55,11 @@ def init_config():
     
 def return_library():
     song_list = []
-    debug_log(f"Processing {len(songs)} files from library")
+    
 
     for song in songs:
         if song.startswith("._") and os.name == 'nt':
-            debug_log(f"Skipping Mac temp file: {song}")
+            
             os.remove(os.path.join(songs_dir, song))
             continue
             
@@ -67,10 +67,10 @@ def return_library():
         info = get_song_info(path)
 
         if info is None:
-            debug_log(f"Skipping invalid file: {path}")
+            
             continue
 
-        debug_log(f"Loaded song: {info['title']} by {info['artist']}")
+        
         song_list.append({
             "title": info["title"],
             "artist": info["artist"],
@@ -81,7 +81,7 @@ def return_library():
             "path": path,
         })
     
-    debug_log(f"Returned {len(song_list)} valid songs")
+    
     return song_list
         
 def shuffle_library(library):
@@ -104,6 +104,8 @@ def set_volume(level):
     Audio.set_volume(level)
 def get_volume():
     return Audio.get_volume()
+def set_position(position):
+    Audio.set_position(position)
 
 def load_song(index, songs):
     song = songs[index]
@@ -120,7 +122,7 @@ def load_song(index, songs):
     return {
         "song": song,
         "ascii_cover": ascii_cover,
-        "visualizer_frames": visualizer_frames,  # always return it (empty list if off)
+        "visualizer_frames": visualizer_frames,  
     }
 
 
@@ -143,7 +145,7 @@ def create_playlist(name):
     """Create new playlist"""
     playlists = get_playlists()
     if name in playlists:
-        return False  # already exists
+        return False  
     playlists[name] = []
     save_playlists(playlists)
     return True

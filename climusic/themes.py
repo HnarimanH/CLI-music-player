@@ -29,7 +29,7 @@ def build_css():
     }
 
     #song-table {
-        height: 1fr;
+        height: 70%;
         border: round;
     }
 
@@ -53,15 +53,15 @@ def build_css():
     }
 
     #audio-visualizer {
-        height: 1fr;
+        height: 20%;
         border: round;
         content-align: center middle;
     }
 
     #terminal {
-        height: 20%;
+        height: 30%;
         border: round;
-        padding: 0 1;
+        content-align: center middle;
     }
 
     #terminal-header {

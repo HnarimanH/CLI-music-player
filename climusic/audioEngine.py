@@ -27,9 +27,15 @@ def get_length():
 
 def song_finished():
     return player.get_state() == vlc.State.Ended
+
 def set_volume(level):
     level = max(0, min(100, level))  # clamp to 0-100
     player.audio_set_volume(level)
-
+    
+def set_position(position):
+    length = get_length()
+    if length > 0:
+        position = max(0, min(position, length))  # clamp to valid range
+        player.set_time(int(position * 1000))  # convert to ms
 def get_volume():
     return player.audio_get_volume()
