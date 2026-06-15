@@ -1,5 +1,4 @@
-from logging import config
-
+import os
 from climusic import musicController
 from climusic.audioEngine import get_position, get_length, song_finished
 from climusic.components.nowPlaying import NowPlaying
@@ -39,6 +38,11 @@ class MusicPlayerActions:
 
     def play_previous_song(self):
         """Go back to previous song in playlist"""
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+        if config["repeat"] == True:
+            self.load_and_play(self.index)
+            return
         self.index -= 1
         if self.index < 0:  
             self.index = 0
@@ -143,29 +147,31 @@ class MusicPlayerActions:
 
         if base in ("man", "help", "?"):
             self._handle_help(cmd)
-        elif base == "prev":
+        elif base == "prev" or base == "previous":
             self.print_to_terminal("loading previous song.")
             self.play_previous_song()
-        elif base == "next":
+        elif base == "next" or base == "n":
             self.print_to_terminal("loading next song.")
             self.play_next_song()
-        elif base == "pause":
+        elif base == "pause" or base == "p":
             musicController.pause_song()
             self.print_to_terminal("paused.")
-        elif base == "resume":
+        elif base == "resume" or base == "r":
             musicController.unpause_song()
             self.print_to_terminal("resumed.")
-        elif base == "repeat":
+        elif base == "repeat" or base == "rep":
             self._handle_repeat()
-        elif base == "vol":
+        elif base == "vol" or base == "volume":
             self.handle_volume(cmd)
-        elif base == "shuffle":
+        elif base == "shuffle" or base == "shuf":
             self._handle_shuffle()
-        elif base == "theme":
+        elif base == "theme" or base == "t":
             self._handle_theme(cmd)
-        elif base == "vis":
+        elif base == "vis" or base == "visualizer":
             self._handle_visualizer(cmd)
-        elif base == "ls":
+        elif base == "new_dir":
+            self.handle_new_dir(cmd)
+        elif base == "ls" or base == "list":
             self.handle_playlist(cmd)
         elif base == "cd":
             self.handle_playlist(cmd)
@@ -191,10 +197,10 @@ class MusicPlayerActions:
         help_text = {
             "playback": [
                 "[bold cyan]Playback[/bold cyan]",
-                "  [yellow]next[/yellow]             play next song",
-                "  [yellow]prev[/yellow]             play previous song",
-                "  [yellow]pause[/yellow]            pause playback",
-                "  [yellow]resume[/yellow]           resume playback",
+                "  [yellow]next/n[/yellow]             play next song",
+                "  [yellow]prev/previous[/yellow]    play previous song",
+                "  [yellow]pause/p[/yellow]          pause playback",
+                "  [yellow]resume/r[/yellow]         resume playback",
             ],
             "volume": [
                 "[bold cyan]Volume[/bold cyan]",
@@ -205,7 +211,7 @@ class MusicPlayerActions:
             ],
             "library": [
                 "[bold cyan]Library[/bold cyan]",
-                "  [yellow]ls[/yellow]               list all playlists",
+                "  [yellow]ls/list[/yellow]            list all playlists",
                 "  [yellow]ls songs[/yellow]         list all songs",
                 "  [yellow]cd <name>[/yellow]        load playlist",
                 "  [yellow]cd ..[/yellow]            back to full library",
@@ -257,8 +263,39 @@ class MusicPlayerActions:
             with open(CONFIG_PATH, "w") as f:                
                 json.dump(config, f)
         self.print_to_terminal(f"[dim]repeat :{config['repeat']}.[/dim]")
+    # ───────────────────────────────────────────────────────────────
+    # Handle new directory
+    # ───────────────────────────────────────────────────────────────
+    def handle_new_dir(self, cmd: str):
+        """Change music directory and reload library"""
+        parts = cmd.split(maxsplit=1)
+        if len(parts) < 2:
+            self.print_to_terminal("[red]usage: new_dir <path>[/red]")
+            return
         
-
+        new_dir = parts[1]
+        if not os.path.isdir(new_dir):
+            self.print_to_terminal("[red]invalid directory[/red]")
+            return
+        
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+        
+        config["dir"] = new_dir
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(config, f)
+        
+        musicController.init_library()
+        self.songsList = musicController.return_library()
+        self.index = 0
+        self.query_one(SongTable).clear()
+        for song in self.songsList:
+            self.query_one(SongTable).add_row(
+                song["title"], song["artist"], song["album"], song["length"]
+            )
+        
+        self.load_and_play(self.index)
+        self.print_to_terminal(f"[dim]music directory changed to: {new_dir}[/dim]")
     # ───────────────────────────────────────────────────────────────
     # Shuffle
     # ───────────────────────────────────────────────────────────────
@@ -369,7 +406,7 @@ class MusicPlayerActions:
             if parts[1] == "..":
                 if not hasattr(self, 'allSongs'):
                     
-                    return  # nothing to go back to
+                    return  
                 self.songsList = self.allSongs
                 self.index = 0
                 self.query_one(SongTable).clear()

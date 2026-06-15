@@ -11,6 +11,8 @@ dependencies = [
     "librosa",
     "numpy",
     "Pillow",
+    "Pillow",
+    "pyperclip",
 ]
 
 [project.scripts]

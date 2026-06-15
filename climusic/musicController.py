@@ -23,9 +23,11 @@ def debug_log(msg):
 songs = []
 songs_dir = ""
 
-def init_library():
-    global songs
-    songs = filterFormats(songs_dir)
+def init_library(new_dir=None):
+    global songs, songs_dir
+    
+    if new_dir:
+        songs_dir = new_dir
     
     songs = filterFormats(songs_dir)
     
