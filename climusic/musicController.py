@@ -13,11 +13,22 @@ APP_DIR = Path.home() / ".climusic"
 APP_DIR.mkdir(exist_ok=True)
 CONFIG_PATH = APP_DIR / "config.json"
 PLAYLISTS_FILE = APP_DIR / "playlists.json"
+LOG_FILE = APP_DIR / "debug.log"  # Path object not a string!
+
+def debug_log(msg):
+    print(msg)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(msg + "\n")
+
 songs = []
+songs_dir = ""
 
 def init_library():
     global songs
     songs = filterFormats(songs_dir)
+    debug_log(f"Loading from: {songs_dir}")
+    songs = filterFormats(songs_dir)
+    debug_log(f"Found {len(songs)} files: {songs}")
 
 def init_config():
     global songs_dir
@@ -44,20 +55,22 @@ def init_config():
     
 def return_library():
     song_list = []
+    debug_log(f"Processing {len(songs)} files from library")
 
     for song in songs:
         if song.startswith("._") and os.name == 'nt':
+            debug_log(f"Skipping Mac temp file: {song}")
             os.remove(os.path.join(songs_dir, song))
             continue
             
         path = os.path.join(songs_dir, song)
-
         info = get_song_info(path)
 
         if info is None:
-            print(f"Skipping invalid file: {path}")
+            debug_log(f"Skipping invalid file: {path}")
             continue
 
+        debug_log(f"Loaded song: {info['title']} by {info['artist']}")
         song_list.append({
             "title": info["title"],
             "artist": info["artist"],
@@ -67,10 +80,12 @@ def return_library():
             "filename": song,
             "path": path,
         })
+    
+    debug_log(f"Returned {len(song_list)} valid songs")
     return song_list
         
 def shuffle_library(library):
-    shuffled = library.copy()  # don't modify original
+    shuffled = library.copy()  
     random.shuffle(shuffled)
     return shuffled
 def play_song(song_data):

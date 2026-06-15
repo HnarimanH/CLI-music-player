@@ -11,7 +11,7 @@ from climusic.components.miniTerminal import MiniTerminal
 from climusic.components.musicPlayerActions import MusicPlayerActions
 from climusic.themes import build_css
 from pynput import keyboard as pynput_keyboard
-from climusic.musicController import CONFIG_PATH
+
 try:
     import vlc
 except Exception:
@@ -22,32 +22,31 @@ except Exception:
     exit(1)
 
 class Main(MusicPlayerActions, App):
+    songsList = []
+
     CSS = build_css()
 
     BINDINGS = [
-        Binding("space", "action_toggle_pause", "Pause/Resume", priority=True),
-        Binding("period", "action_next_song", "Next", priority=True),  
-        Binding("comma", "action_prev_song", "Previous", priority=True),
-        Binding("right_square_bracket", "action_vol_up", "Vol Up", priority=True),
-        Binding("left_square_bracket", "action_vol_down", "Vol Down", priority=True),
+        Binding("space", "toggle_pause", "Pause/Resume", priority=True),
+        Binding("period", "next_song", "Next", priority=True),
+        Binding("comma", "prev_song", "Previous", priority=True),
+        Binding("right_square_bracket", "vol_up", "Vol Up", priority=True),
+        Binding("left_square_bracket", "vol_down", "Vol Down", priority=True),
     ]
-
-    allSongs = musicController.return_library()
-    songsList = allSongs
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with open(musicController.CONFIG_PATH, "r") as f:  
+        with open(musicController.CONFIG_PATH, "r") as f:
             config = json.load(f)
         if config["visualizer"]:
             left_panel = Vertical(
-                SongTable(self.songsList),
+                SongTable(),
                 AudioVisualizer(),
                 id="left_panel"
             )
-        elif config["visualizer"] == False:
+        else:
             left_panel = Horizontal(
-                SongTable(self.songsList),
+                SongTable(),
                 id="left_panel"
             )
         yield Horizontal(
@@ -64,7 +63,6 @@ class Main(MusicPlayerActions, App):
         if self.index is None or self.index < 0:
             return
         self.load_and_play(self.index)
-    
 
     def _setup_global_hotkeys(self):
         def on_press(key):
@@ -78,18 +76,20 @@ class Main(MusicPlayerActions, App):
         listener = pynput_keyboard.Listener(on_press=on_press)
         listener.start()
 
-    
     def on_mount(self) -> None:
+        self.songsList = musicController.return_library()
+        self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
         self.is_paused = False
-        with open(musicController.CONFIG_PATH, "r") as f:  # Load here
+        with open(musicController.CONFIG_PATH, "r") as f:
             config = json.load(f)
-        if config["visualizer"] == True:
+        if config["visualizer"]:
             self.visualizer = self.query_one(AudioVisualizer)
         current_theme = config.get("theme", "purple")
         self.add_class(current_theme)
         self.set_interval(1 / 20, self.update_progress)
         self._setup_global_hotkeys()
+
     # ═══════════════════════════════════════════════════════════════
     # Key Binding Actions
     # ═══════════════════════════════════════════════════════════════
@@ -122,11 +122,13 @@ class Main(MusicPlayerActions, App):
         new_vol = max(0, musicController.get_volume() - 10)
         musicController.set_volume(new_vol)
         self.print_to_terminal(f"[dim]vol: {new_vol}%[/dim]")
+
+
 def main():
-    musicController.init_config()  
+    musicController.init_config()
     app = Main()
     app.run()
-    
+
 
 if __name__ == "__main__":
     main()
