@@ -83,12 +83,16 @@ class Main(MusicPlayerActions, App):
 
     def on_mount(self) -> None:
         self.allSongs = musicController.return_library()
-        self.songsList = self.allSongs.copy()
+        with open(musicController.CONFIG_PATH, "r") as f:
+            config = json.load(f)
+        if config["shuffle"] == True:
+
+            self.songsList = musicController.shuffle_library(self.allSongs)
+        else:
+            self.songsList = self.allSongs
         self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
         self.is_paused = False
-        with open(musicController.CONFIG_PATH, "r") as f:
-            config = json.load(f)
         if config["visualizer"]:
             self.visualizer = self.query_one(AudioVisualizer)
         current_theme = config.get("theme", "purple")
