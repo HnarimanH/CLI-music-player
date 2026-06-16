@@ -10,14 +10,8 @@ No bloated GUI. No browser tabs. Just music and your terminal.
 
 ## Preview
 
-## Preview
-
 <p align="center">
   <img src="climusic/assets/record.gif" width="700"/>
-</p>
-
-<p align="center">
-  <img src="climusic/assets/screenshot.svg" width="700"/>
 </p>
 
 ---
