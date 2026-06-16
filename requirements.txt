@@ -1,7 +1,9 @@
 librosa==0.11.0
+miniaudio==1.71
 mutagen==1.47.0
 numpy==2.4.6
 Pillow==12.2.0
 pynput==1.8.2
+pyperclip==1.11.0
 python_vlc==3.0.21203
 textual==8.2.7
