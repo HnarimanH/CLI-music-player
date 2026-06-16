@@ -171,7 +171,16 @@ def add_to_playlist(playlist_name, song):
     playlists[playlist_name].append(song)
     save_playlists(playlists)
     return True
-
+def remove_from_playlist(playlist_name, song):
+    """Remove song from playlist"""
+    playlists = get_playlists()
+    if playlist_name not in playlists:
+        return False
+    if song in playlists[playlist_name]:
+        playlists[playlist_name].remove(song)
+        save_playlists(playlists)
+        return True
+    return False
 def load_playlist(playlist_name):
     """Get songs from playlist"""
     playlists = get_playlists()

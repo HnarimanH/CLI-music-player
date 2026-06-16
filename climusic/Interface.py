@@ -82,21 +82,26 @@ class Main(MusicPlayerActions, App):
         listener.start()
 
     def on_mount(self) -> None:
+        self.index = 0  # Initialize FIRST
+        self.is_paused = False
+        
         self.allSongs = musicController.return_library()
         with open(musicController.CONFIG_PATH, "r") as f:
             config = json.load(f)
         if config["shuffle"] == True:
-
             self.songsList = musicController.shuffle_library(self.allSongs)
         else:
-            self.songsList =  musicController.filter_songs_alphabetically(self.songsList, sort_by="title")
+            self.songsList = musicController.filter_songs_alphabetically(self.allSongs, sort_by="title")
+        
         self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
-        self.is_paused = False
+        
         if config["visualizer"]:
             self.visualizer = self.query_one(AudioVisualizer)
+        
         current_theme = config.get("theme", "purple")
         self.add_class(current_theme)
+        
         self.set_interval(1 / 20, self.update_progress)
         self._setup_global_hotkeys()
 
@@ -114,22 +119,22 @@ class Main(MusicPlayerActions, App):
         self.is_paused = not self.is_paused
 
     def action_next_song(self) -> None:
-        self.print_to_terminal("[dim]next.[/dim]")
+        
         self.is_paused = False
         self.play_next_song()
 
     def action_prev_song(self) -> None:
-        self.print_to_terminal("[dim]prev.[/dim]")
+        
         self.is_paused = False
         self.play_previous_song()
     
     def action_forward_song(self) -> None:
-        self.print_to_terminal("[dim]forward.[/dim]")
+        
         self.is_paused = False
         self.forward_song()
 
     def action_back_song(self) -> None:
-        self.print_to_terminal("[dim]back.[/dim]")
+        
         self.is_paused = False
         self.back_song()
 

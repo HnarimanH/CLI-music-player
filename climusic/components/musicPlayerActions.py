@@ -6,16 +6,24 @@ from climusic.components.miniTerminal import MiniTerminal
 import json
 from climusic.components.songTable import SongTable
 from climusic.musicController import PLAYLISTS_FILE, CONFIG_PATH
+import time
 class MusicPlayerActions:
     """
     Mixin for song control logic and command handling.
     Expects: self.songsList, self.visualizer, self.progress_bar
     """
-
+    
     # ═══════════════════════════════════════════════════════════════
     # Song Playback & Navigation
     # ═══════════════════════════════════════════════════════════════
     is_paused = False
+    _last_skip_time = 0
+    SKIP_TIMEOUT = 1 # seconds 
+
+
+    
+
+
     def load_and_play(self, index: int):
         """Load song at index and start playback"""
         song_data = musicController.load_song(index, songs=self.songsList)
@@ -23,36 +31,56 @@ class MusicPlayerActions:
         self.visualizer_frames = song_data["visualizer_frames"]
         musicController.play_song(self.song)
         self.query_one(NowPlaying).update_song(song_data["ascii_cover"], self.song)
+    def _can_skip(self) -> bool:
+        """Check if enough time has passed since last skip"""
+        current_time = time.time()
+        if current_time - self._last_skip_time < self.SKIP_TIMEOUT:
+            return False
+        self._last_skip_time = current_time
+        return True
 
     def play_next_song(self):
         """Skip to next song in playlist"""
-        if  not hasattr(self, "song"):
+        if not self._can_skip():
+            return
+        
+        if not hasattr(self, "song"):
             self.print_to_terminal("[red]no song is loaded[/red]")
             return
+        
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
-        if config["repeat"] == True:
+        
+        if config.get("repeat") == True:
             self.load_and_play(self.index)
             return
+        
         self.index += 1
         if self.index >= len(self.songsList):
-            return
+            self.index = 0
+        
         self.load_and_play(self.index)
 
     def play_previous_song(self):
         """Go back to previous song in playlist"""
-        if  not hasattr(self, "song"):
+        if not self._can_skip():
+            return
+        
+        if not hasattr(self, "song"):
             self.print_to_terminal("[red]no song is loaded[/red]")
             return
+        
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
-        if config["repeat"] == True:
+        
+        if config.get("repeat") == True:
             self.load_and_play(self.index)
             return
+        
         self.index -= 1
-        if self.index < 0:  
-            self.index = 0
-            return
+        if self.index < 0:
+            self.index = len(self.songsList) - 1
+        
         self.load_and_play(self.index)
 
 
@@ -216,6 +244,12 @@ class MusicPlayerActions:
                 "  [yellow]pause, p[/yellow]          pause playback",
                 "  [yellow]resume, r[/yellow]         resume playback",
                 "  [yellow]repeat, rep[/yellow]       toggle repeat mode",
+                "[bold cyan]Playback hotKeys[/bold cyan]",
+                "  [yellow]space[/yellow]             pause/resume",
+                "  [yellow]d[/yellow]                 next song",
+                "  [yellow]a[/yellow]                 previous song",
+                "  [yellow]q[/yellow]                 skip forward 5s",
+                "  [yellow]e[/yellow]                 skip back 5s",
             ],
             "volume": [
                 "[bold cyan]Volume[/bold cyan]",
@@ -223,6 +257,9 @@ class MusicPlayerActions:
                 "  [yellow]vol up[/yellow]            increase by 10%",
                 "  [yellow]vol down[/yellow]          decrease by 10%",
                 "  [yellow]vol 50[/yellow]            set to 50%",
+                "[bold cyan]Volume hotkeys[/bold cyan]",
+                "  [yellow]w[/yellow]                 volume up",
+                "  [yellow]s[/yellow]                 volume down",
             ],
             "playlists": [
                 "[bold cyan]Playlists[/bold cyan]",
@@ -232,12 +269,13 @@ class MusicPlayerActions:
                 "  [yellow]cd <name>[/yellow]         load playlist",
                 "  [yellow]cd ..[/yellow]             back to full library",
                 "  [yellow]cp . <name>[/yellow]       add current song to playlist",
+                "  [yellow]cp rm <name>[/yellow]      remove current song from playlist",
                 "  [yellow]fav/favorites[/yellow]     add current song to 'favorites' playlist",
                 "  [yellow]rm <name>[/yellow]         delete playlist",
             ],
             "library": [
                 "[bold cyan]Library[/bold cyan]",
-                "  [yellow]sort <artist/album/title>[/yellow]   sort songs alphabetically(title default)",
+                "  [yellow]sort <artist,album,title>[/yellow]   sort songs alphabetically(title default)",
                 "  [yellow]shuffle[/yellow]                     randomize song order",
                 "  [yellow]new_dir <path>[/yellow]              change music directory",
             ],
@@ -309,11 +347,8 @@ class MusicPlayerActions:
         musicController.init_library(new_dir=new_dir)
         self.songsList = musicController.return_library()
         self.index = 0
-        self.query_one(SongTable).clear()
-        for song in self.songsList:
-            self.query_one(SongTable).add_row(
-                song["title"], song["artist"], song["album"], song["length"]
-            )
+        self.query_one(SongTable).load_songs(self.songsList)
+        
         
         self.load_and_play(self.index)
         self.print_to_terminal(f"[dim]music directory changed to: {new_dir}[/dim]")
@@ -343,15 +378,8 @@ class MusicPlayerActions:
         
         # Rebuild table once
         self.index = 0
-        song_table = self.query_one(SongTable)
-        song_table.clear()
-        for song in self.songsList:
-            song_table.add_row(
-                song["title"],
-                song["artist"],
-                song["album"],
-                song["length"]
-            )
+        self.query_one(SongTable).load_songs(self.songsList)
+            
         
         self.load_and_play(self.index)
         self.print_to_terminal(f"[dim]{msg}[/dim]")
@@ -433,8 +461,8 @@ class MusicPlayerActions:
                     for name in playlists:
                         self.print_to_terminal(f"  [cyan]d[/cyan]  {name}/")
             elif parts[1] == "songs":
-                for song in self.songsList:
-                    self.print_to_terminal(f"  {song['title']} — {song['artist']}")
+                for i, song in enumerate(self.songsList, start=1):
+                    self.print_to_terminal(f"  {i}. {song['title']} — {song['artist']}")
 
         elif base == "cd":
             if len(parts) < 2:
@@ -446,11 +474,7 @@ class MusicPlayerActions:
                     return  
                 self.songsList = self.allSongs
                 self.index = 0
-                self.query_one(SongTable).clear()
-                for song in self.allSongs:
-                    self.query_one(SongTable).add_row(
-                        song["title"], song["artist"], song["album"], song["length"]
-                    )
+                self.query_one(SongTable).load_songs(self.songsList)
                 self.load_and_play(0)
                 self.print_to_terminal("[dim]~ back to library[/dim]")
             else:
@@ -458,11 +482,7 @@ class MusicPlayerActions:
                 if songs:
                     self.songsList = songs
                     self.index = 0
-                    self.query_one(SongTable).clear()
-                    for song in songs:
-                        self.query_one(SongTable).add_row(
-                            song["title"], song["artist"], song["album"], song["length"]
-                        )
+                    self.query_one(SongTable).load_songs(self.songsList)
                     self.load_and_play(0)
                     self.print_to_terminal(f"[dim]~/{parts[1]} ({len(songs)} songs)[/dim]")
                 else:
@@ -480,19 +500,26 @@ class MusicPlayerActions:
         elif base == "cp":
             # cp . <playlist>
             
-            if len(parts) < 3 or parts[1] != ".":
+            if len(parts) < 3 or parts[1] not in (".", "rm"):
                 self.print_to_terminal("[red]usage: cp . <playlist>[/red]")
                 return
             if not hasattr(self, "song"):
                 self.print_to_terminal("[red]cp: no song loaded[/red]")
                 return
+
             if hasattr(self, "song"):
-                song_to_save = {k: self.song[k] for k in ("title", "artist", "album", "length", "path", "filename")}
-                if musicController.add_to_playlist(parts[2], song_to_save):
-                    self.print_to_terminal(f"[dim]'{self.song['title']}' → {parts[2]}[/dim]")
-                    self.print_to_terminal(f"[dim]'cd . {parts[2]}' to view {parts[2]}[/dim]")
-                else:
-                    self.print_to_terminal(f"[red]cp: {parts[2]}: no such playlist[/red]")
+                if parts[1] == ".":
+                    song_to_save = {k: self.song[k] for k in ("title", "artist", "album", "length", "path", "filename")}
+                    if musicController.add_to_playlist(parts[2], song_to_save):
+                        self.print_to_terminal(f"[dim]'{self.song['title']}' → {parts[2]}[/dim]")
+                        self.print_to_terminal(f"[dim]'cd . {parts[2]}' to view {parts[2]}[/dim]")
+                    else:
+                        self.print_to_terminal(f"[red]cp: {parts[2]}: no such playlist[/red]")
+                elif parts[1] == "rm":
+                    if musicController.remove_from_playlist(parts[2], self.song):
+                        self.print_to_terminal(f"[dim]removed '{self.song['title']}' from {parts[2]}[/dim]")
+                    else:
+                        self.print_to_terminal(f"[red]cp: {parts[2]}: no such playlist or song not in playlist[/red]")
             else:
                 self.print_to_terminal("[red]cp: no song loaded[/red]")
 
@@ -576,11 +603,7 @@ class MusicPlayerActions:
         self.songsList = musicController.filter_songs_alphabetically(self.songsList, sort_by)
         self.index = 0
         
-        self.query_one(SongTable).clear()
-        for song in self.songsList:
-            self.query_one(SongTable).add_row(
-                song["title"], song["artist"], song["album"], song["length"]
-            )
+        self.query_one(SongTable).load_songs(self.songsList)
         self.load_and_play(self.index)
         self.print_to_terminal(f"[dim]sorted by {sort_by}[/dim]")
 

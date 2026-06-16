@@ -7,6 +7,7 @@ class SongTable(DataTable):
 
     def on_mount(self) -> None:
         self.cursor_type = "row"
+        self.add_column("num", width=5)
         self.add_column("Title", width=30)
         self.add_column("Artist", width=20)
         self.add_column("Album", width=25)
@@ -14,8 +15,9 @@ class SongTable(DataTable):
 
     def load_songs(self, songs_list):
         self.clear()
-        for song in songs_list:
+        for i, song in enumerate(songs_list, start=1):
             self.add_row(
+                str(i),  # Displayed number starts from 1, but index is 0-based
                 truncate(song["title"], 30).strip(),
                 truncate(song["artist"], 20).strip(),
                 truncate(song["album"], 25).strip(),
