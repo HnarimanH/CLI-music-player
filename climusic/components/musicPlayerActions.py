@@ -319,10 +319,27 @@ class MusicPlayerActions:
     # ───────────────────────────────────────────────────────────────
 
     def _handle_shuffle(self):
-        """Shuffle current playlist and rebuild table"""
-        self.songsList = musicController.shuffle_library(self.songsList)
-        self.index = 0
+        """Toggle shuffle mode"""
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
         
+        config["shuffle"] = not config.get("shuffle", False)
+        current_songs = self.songsList.copy()  # Preserve current order for unshuffling
+        # Update the song list based on shuffle state
+        if config["shuffle"]:
+            self.songsList = musicController.shuffle_library(current_songs)
+            msg = "shuffle: on"
+        else:
+            # Reload original library order
+            self.songsList = current_songs
+            msg = "shuffle: off"
+        
+        # Save config
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(config, f)
+        
+        # Rebuild table once
+        self.index = 0
         song_table = self.query_one(SongTable)
         song_table.clear()
         for song in self.songsList:
@@ -334,8 +351,7 @@ class MusicPlayerActions:
             )
         
         self.load_and_play(self.index)
-        self.print_to_terminal("[dim]library shuffled[/dim]")
-
+        self.print_to_terminal(f"[dim]{msg}[/dim]")
     # ───────────────────────────────────────────────────────────────
     # Theme Management
     # ───────────────────────────────────────────────────────────────
