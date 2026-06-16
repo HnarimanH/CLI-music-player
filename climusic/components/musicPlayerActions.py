@@ -285,7 +285,7 @@ class MusicPlayerActions:
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f)
         
-        musicController.init_library()
+        musicController.init_library(new_dir=new_dir)
         self.songsList = musicController.return_library()
         self.index = 0
         self.query_one(SongTable).clear()

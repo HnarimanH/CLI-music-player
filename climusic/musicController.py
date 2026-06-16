@@ -83,7 +83,7 @@ def return_library():
             "path": path,
         })
     
-    
+    print(f"[dim]loaded {len(song_list)} songs from {songs_dir}[/dim]")
     return song_list
         
 def shuffle_library(library):

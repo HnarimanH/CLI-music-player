@@ -23,7 +23,7 @@ class MiniTerminal(Vertical):
     def write(self, msg: str) -> None:
         log = self.query_one("#terminal-log", RichLog)
         log.write(msg)
-        log.scroll_end(animate=False)
+        log.scroll_end(animate=True)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         cmd = event.value.strip()
@@ -42,14 +42,34 @@ class MiniTerminal(Vertical):
         self.query_one("#terminal-input", Input).focus()
 
     def _on_key(self, event) -> None:
-        """Handle Ctrl+V for paste"""
+        """Handle Ctrl+V for paste with length limit"""
         input_widget = self.query_one("#terminal-input", Input)
         
         if event.key == "ctrl+v":
             try:
                 clipboard = pyperclip.paste()
-                input_widget.value = clipboard
-                input_widget.cursor_position = len(clipboard)
+                max_length = 100
+                
+                if len(clipboard) > max_length:
+                    self.write(f"[red]text too long ({len(clipboard)} > {max_length})[/red]")
+                else:
+                    input_widget.value = clipboard
+                    input_widget.cursor_position = len(clipboard)
             except Exception as e:
                 self.write(f"[red]paste error: {e}[/red]")
+            event.prevent_default()
+        elif event.key == "up":
+            if self.history and self.history_index < len(self.history) - 1:
+                self.history_index += 1
+                input_widget.value = self.history[self.history_index]
+                input_widget.cursor_position = len(input_widget.value)
+            event.prevent_default()
+        elif event.key == "down":   
+            if self.history and self.history_index > 0:
+                self.history_index -= 1
+                input_widget.value = self.history[self.history_index]
+                input_widget.cursor_position = len(input_widget.value)
+            elif self.history_index == 0:
+                self.history_index = -1
+                input_widget.value = ""
             event.prevent_default()

@@ -21,7 +21,7 @@ def load_audio(path):
     finally:
         os.unlink(tmppath)
 def get_audio_wave(path, hopLength=4056, bars=60):
-    y, sr = load_audio(path)  # 👈 only line that changed
+    y, sr = load_audio(path)  
     
     stft = librosa.stft(y, n_fft=512, hop_length=hopLength)
     spectrogram = np.abs(stft)
