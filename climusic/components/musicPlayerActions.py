@@ -26,6 +26,9 @@ class MusicPlayerActions:
 
     def play_next_song(self):
         """Skip to next song in playlist"""
+        if  not hasattr(self, "song"):
+            self.print_to_terminal("[red]no song is loaded[/red]")
+            return
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
         if config["repeat"] == True:
@@ -38,6 +41,9 @@ class MusicPlayerActions:
 
     def play_previous_song(self):
         """Go back to previous song in playlist"""
+        if  not hasattr(self, "song"):
+            self.print_to_terminal("[red]no song is loaded[/red]")
+            return
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
         if config["repeat"] == True:
@@ -52,6 +58,9 @@ class MusicPlayerActions:
 
     def action_toggle_pause(self):
         """Toggle play/pause state"""
+        if  not hasattr(self, "song"):
+            self.print_to_terminal("[red]no song is loaded[/red]")
+            return
         if self.is_paused:
             musicController.unpause_song()
             self.print_to_terminal("resumed.")
@@ -173,6 +182,8 @@ class MusicPlayerActions:
             self.handle_new_dir(cmd)
         elif base == "ls" or base == "list":
             self.handle_playlist(cmd)
+        elif base == "fav" or base == "favorites":
+            self.handle_favorites(cmd)
         elif base == "cd":
             self.handle_playlist(cmd)
         elif base == "mkdir":
@@ -191,39 +202,46 @@ class MusicPlayerActions:
     # ═══════════════════════════════════════════════════════════════
 
     def _handle_help(self, cmd: str):
+        """Display help for commands"""
         parts = cmd.split(maxsplit=1)
         topic = parts[1].lower() if len(parts) > 1 else None
 
         help_text = {
             "playback": [
                 "[bold cyan]Playback[/bold cyan]",
-                "  [yellow]next/n[/yellow]             play next song",
-                "  [yellow]prev/previous[/yellow]    play previous song",
-                "  [yellow]pause/p[/yellow]          pause playback",
-                "  [yellow]resume/r[/yellow]         resume playback",
+                "  [yellow]next, n[/yellow]           play next song",
+                "  [yellow]prev, previous[/yellow]    play previous song",
+                "  [yellow]pause, p[/yellow]          pause playback",
+                "  [yellow]resume, r[/yellow]         resume playback",
+                "  [yellow]repeat, rep[/yellow]       toggle repeat mode",
             ],
             "volume": [
                 "[bold cyan]Volume[/bold cyan]",
-                "  [yellow]vol[/yellow]              show current volume",
-                "  [yellow]vol up[/yellow]           increase by 10%",
-                "  [yellow]vol down[/yellow]         decrease by 10%",
-                "  [yellow]vol 50[/yellow]           set to 50%",
+                "  [yellow]vol[/yellow]               show current volume",
+                "  [yellow]vol up[/yellow]            increase by 10%",
+                "  [yellow]vol down[/yellow]          decrease by 10%",
+                "  [yellow]vol 50[/yellow]            set to 50%",
+            ],
+            "playlists": [
+                "[bold cyan]Playlists[/bold cyan]",
+                "  [yellow]ls, list[/yellow]          list all playlists",
+                "  [yellow]ls songs[/yellow]          list all songs in library",
+                "  [yellow]mkdir <name>[/yellow]      create new playlist",
+                "  [yellow]cd <name>[/yellow]         load playlist",
+                "  [yellow]cd ..[/yellow]             back to full library",
+                "  [yellow]cp . <name>[/yellow]       add current song to playlist",
+                "  [yellow]fav/favorites[/yellow]     add current song to 'favorites' playlist",
+                "  [yellow]rm <name>[/yellow]         delete playlist",
             ],
             "library": [
                 "[bold cyan]Library[/bold cyan]",
-                "  [yellow]ls/list[/yellow]            list all playlists",
-                "  [yellow]ls songs[/yellow]         list all songs",
-                "  [yellow]cd <name>[/yellow]        load playlist",
-                "  [yellow]cd ..[/yellow]            back to full library",
-                "  [yellow]mkdir <name>[/yellow]     create playlist",
-                "  [yellow]cp . <name>[/yellow]      add current song to playlist",
-                "  [yellow]rm <name>[/yellow]        delete playlist",
-                "  [yellow]shuffle[/yellow]          randomize song order",
+                "  [yellow]shuffle[/yellow]           randomize song order",
+                "  [yellow]new_dir <path>[/yellow]    change music directory",
             ],
             "appearance": [
                 "[bold cyan]Appearance[/bold cyan]",
-                "  [yellow]theme <name>[/yellow]     change theme (live)",
-                "  [yellow]vis on/off[/yellow]       toggle visualizer",
+                "  [yellow]theme <name>[/yellow]      change theme (live)",
+                "  [yellow]vis on/off[/yellow]        toggle visualizer",
             ],
             "themes": [
                 "[bold cyan]Available Themes[/bold cyan]",
@@ -442,13 +460,18 @@ class MusicPlayerActions:
 
         elif base == "cp":
             # cp . <playlist>
+            
             if len(parts) < 3 or parts[1] != ".":
                 self.print_to_terminal("[red]usage: cp . <playlist>[/red]")
+                return
+            if not hasattr(self, "song"):
+                self.print_to_terminal("[red]cp: no song loaded[/red]")
                 return
             if hasattr(self, "song"):
                 song_to_save = {k: self.song[k] for k in ("title", "artist", "album", "length", "path", "filename")}
                 if musicController.add_to_playlist(parts[2], song_to_save):
                     self.print_to_terminal(f"[dim]'{self.song['title']}' → {parts[2]}[/dim]")
+                    self.print_to_terminal(f"[dim]'cd . {parts[2]}' to view {parts[2]}[/dim]")
                 else:
                     self.print_to_terminal(f"[red]cp: {parts[2]}: no such playlist[/red]")
             else:
@@ -462,16 +485,34 @@ class MusicPlayerActions:
                 self.print_to_terminal(f"[dim]removed '{parts[1]}'[/dim]")
             else:
                 self.print_to_terminal(f"[red]rm: {parts[1]}: no such playlist[/red]")
-
+    # ═══════════════════════════════════════════════════════════════
+    # Handle Favorites
+    # ═══════════════════════════════════════════════════════════════
+    def handle_favorites(self, cmd: str):
+        parts = cmd.split(maxsplit=1)
+        if len(parts) != 1:
+            self.print_to_terminal("[red]usage: fav[/red]")
+            return
+        if  not hasattr(self, "song"):
+            self.print_to_terminal("[red]no song is loaded[/red]")
+            return
+        with open(PLAYLISTS_FILE, "r") as f:
+            playlists = json.load(f)
+        if playlists.get("favorites") is None:
+           musicController.create_playlist("favorites")
+        song_to_save = {k: self.song[k] for k in ("title", "artist", "album", "length", "path", "filename")}
+        musicController.add_to_playlist("favorites", song_to_save)
+        self.print_to_terminal(f"[dim]'{self.song['title']}' → favorites[/dim]")
+        self.print_to_terminal(f"[dim]'cd . favorites' to view favorites[/dim]")
+        
     # ═══════════════════════════════════════════════════════════════
     # Volume Control
     # ═══════════════════════════════════════════════════════════════
-
-    def handle_volume(self, cmd: str):
         """
         Handle volume adjustments
         Usage: vol [up|down|0-100]
         """
+    def handle_volume(self, cmd: str):    
         parts = cmd.split(maxsplit=1)
         
         if len(parts) == 1:
