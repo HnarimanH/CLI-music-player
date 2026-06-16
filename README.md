@@ -10,9 +10,14 @@ No bloated GUI. No browser tabs. Just music and your terminal.
 
 ## Preview
 
+## Preview
+
 <p align="center">
-  ![CLPYmusic Screenshot](climusic/assets/screenshot.svg)
-  ![CLPYmusic Screenshot](climusic/assets/record.gif)
+  <img src="climusic/assets/record.gif" width="700"/>
+</p>
+
+<p align="center">
+  <img src="climusic/assets/screenshot.svg" width="700"/>
 </p>
 
 ---
@@ -149,5 +154,5 @@ MIT License
 ---
 
 <p align="center">
-Built because music deserves better than another browser tab.
+Built because WHY NOT!?
 </p>
