@@ -129,7 +129,18 @@ def load_song(index, songs):
 
 
 
-
+def filter_songs_alphabetically(songs, sort_by="title"):
+    """
+    Sort songs alphabetically
+    
+    Args:
+        songs: list of song dicts
+        sort_by: "title", "artist", or "album"
+    
+    Returns:
+        sorted list
+    """
+    return sorted(songs, key=lambda s: s[sort_by].lower())
 
 def get_playlists():
     """Load all playlists"""

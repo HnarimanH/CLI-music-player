@@ -184,6 +184,8 @@ class MusicPlayerActions:
             self.handle_playlist(cmd)
         elif base == "fav" or base == "favorites":
             self.handle_favorites(cmd)
+        elif base == "sort" or base == "a2z":
+            self._handle_sort(cmd)
         elif base == "cd":
             self.handle_playlist(cmd)
         elif base == "mkdir":
@@ -235,8 +237,9 @@ class MusicPlayerActions:
             ],
             "library": [
                 "[bold cyan]Library[/bold cyan]",
-                "  [yellow]shuffle[/yellow]           randomize song order",
-                "  [yellow]new_dir <path>[/yellow]    change music directory",
+                "  [yellow]sort <artist/album/title>[/yellow]   sort songs alphabetically(title default)",
+                "  [yellow]shuffle[/yellow]                     randomize song order",
+                "  [yellow]new_dir <path>[/yellow]              change music directory",
             ],
             "appearance": [
                 "[bold cyan]Appearance[/bold cyan]",
@@ -324,7 +327,7 @@ class MusicPlayerActions:
             config = json.load(f)
         
         config["shuffle"] = not config.get("shuffle", False)
-        current_songs = self.songsList.copy()  # Preserve current order for unshuffling
+        current_songs =  musicController.filter_songs_alphabetically(self.songsList, sort_by="title")  # Preserve current order for unshuffling
         # Update the song list based on shuffle state
         if config["shuffle"]:
             self.songsList = musicController.shuffle_library(current_songs)
@@ -557,6 +560,32 @@ class MusicPlayerActions:
                         self.print_to_terminal("[red]volume must be 0-100[/red]")
                 except ValueError:
                     self.print_to_terminal("[red]usage: vol [up|down|0-100][/red]")
+    # ═══════════════════════════════════════════════════════════════
+    # Handle Sorting
+    # ═══════════════════════════════════════════════════════════════
+    def _handle_sort(self, cmd: str):
+        """Sort songs alphabetically"""
+        parts = cmd.split(maxsplit=1)
+        sort_by = "title"  # default
+        
+        if len(parts) > 1:
+            option = parts[1].lower()
+            if option in ("artist", "album", "title"):
+                sort_by = option
+        
+        self.songsList = musicController.filter_songs_alphabetically(self.songsList, sort_by)
+        self.index = 0
+        
+        self.query_one(SongTable).clear()
+        for song in self.songsList:
+            self.query_one(SongTable).add_row(
+                song["title"], song["artist"], song["album"], song["length"]
+            )
+        self.load_and_play(self.index)
+        self.print_to_terminal(f"[dim]sorted by {sort_by}[/dim]")
+
+
+
 
     # ═══════════════════════════════════════════════════════════════
     # Utility

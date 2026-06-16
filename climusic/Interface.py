@@ -89,7 +89,7 @@ class Main(MusicPlayerActions, App):
 
             self.songsList = musicController.shuffle_library(self.allSongs)
         else:
-            self.songsList = self.allSongs
+            self.songsList =  musicController.filter_songs_alphabetically(self.songsList, sort_by="title")
         self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
         self.is_paused = False
