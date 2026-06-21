@@ -1,15 +1,16 @@
 from io import BytesIO
 from PIL import Image, ImageEnhance
-
+from importlib import resources
 ASCII_CHARS = " .:-=+*#%@"
 
 
 def cover_to_ascii(cover_bytes, width=30):
-    if cover_bytes is None:
-        return "No Cover Art"
-
-    image = Image.open(BytesIO(cover_bytes))
-
+    try:
+       image = Image.open(BytesIO(cover_bytes))
+    except Exception as e:
+        with resources.files("climusic.assets").joinpath("defaultAlbumCover.jpeg").open("rb") as f:
+            image = Image.open(BytesIO(f.read()))
+            print(f"Failed to load cover image, using default. Error: {e}")
     # Convert to grayscale
     image = image.convert("L")
 
