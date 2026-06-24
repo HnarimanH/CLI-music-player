@@ -143,7 +143,8 @@ class MusicPlayerActions:
                 return
             if not total or total <= 0 or not hasattr(self, "visualizer_frames"):
                 return
-            
+            if song_finished():
+                self.play_next_song()
             # Update visualizer if enabled
             with open(CONFIG_PATH, "r") as f:
                 config = json.load(f)
@@ -162,8 +163,7 @@ class MusicPlayerActions:
             self.progress_bar.update_progress(current, total)
 
             # Auto-advance to next song
-            if song_finished():
-                self.play_next_song()
+            
 
         except Exception as e:
             print(f"[red]error: {e}[/red]")
