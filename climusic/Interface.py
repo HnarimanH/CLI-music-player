@@ -120,23 +120,25 @@ class Main(MusicPlayerActions, App):
 
     def action_next_song(self) -> None:
         
-        
+        self.is_paused = False
         self.play_next_song()
 
     def action_prev_song(self) -> None:
         
-        
+        self.is_paused = False
         self.play_previous_song()
     
     def action_forward_song(self) -> None:
         
-        
+        self.is_paused = False
         self.forward_song()
+        musicController.unpause_song()
 
     def action_back_song(self) -> None:
         
-        
+        self.is_paused = False
         self.back_song()
+        musicController.unpause_song()
 
     def action_vol_up(self) -> None:
         new_vol = min(100, musicController.get_volume() + 10)
