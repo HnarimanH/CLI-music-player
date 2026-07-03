@@ -43,7 +43,6 @@ def build_css():
     #AlbumAsciiCover {
         content-align: center middle;
         text-align: center;
-        padding-top: 1;
         padding-left: 1;
     }
 

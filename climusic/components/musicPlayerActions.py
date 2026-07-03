@@ -25,12 +25,17 @@ class MusicPlayerActions:
 
 
     def load_and_play(self, index: int):
-        """Load song at index and start playback"""
         song_data = musicController.load_song(index, songs=self.songsList)
         self.song = song_data["song"]
         self.visualizer_frames = song_data["visualizer_frames"]
         musicController.play_song(self.song)
         self.query_one(NowPlaying).update_song(song_data["ascii_cover"], self.song)
+
+        # NEW — anchor for local time tracking
+        self._playback_anchor_time = time.time()
+        self._playback_anchor_pos = 0
+        self._last_vlc_sync = 0
+
     def _can_skip(self) -> bool:
         """Check if enough time has passed since last skip"""
         current_time = time.time()
@@ -129,45 +134,39 @@ class MusicPlayerActions:
     # ═══════════════════════════════════════════════════════════════
 
     def update_progress(self) -> None:
-        """
-        Called every ~50ms to update:
-        - Audio visualizer frame
-        - Progress bar position
-        - Auto-play next song when finished
-        """
         try:
-            current = get_position()
+            if self.is_paused:
+                return
+            now = time.time()
+
+            # only actually poll VLC ~5x/sec to resync drift, not 30x/sec
+            if now - self._last_vlc_sync > 0.2:
+                real_pos = get_position()
+                if real_pos >= 0:
+                    self._playback_anchor_pos = real_pos
+                    self._playback_anchor_time = now
+                self._last_vlc_sync = now
+
+            # every tick: derive position from local clock, cheap as hell
+            current = self._playback_anchor_pos + (now - self._playback_anchor_time)
             total = get_length()
-            
+
             if current < 0 or not total or total <= 0:
                 return
-            if not total or total <= 0 or not hasattr(self, "visualizer_frames"):
+            if not hasattr(self, "visualizer_frames"):
                 return
             if song_finished():
                 self.play_next_song()
-            # Update visualizer if enabled
-            with open(CONFIG_PATH, "r") as f:
-                config = json.load(f)
-            if config.get("visualizer", True) and hasattr(self, "visualizer"):
-                frame_index = min(
-                    int((current / total) * len(self.visualizer_frames) - 1),
-                    len(self.visualizer_frames) - 1
-                )
-                frame_index = max(0, frame_index)
+
+            if hasattr(self, "visualizer"):
+                frame_index = int((current / total) * len(self.visualizer_frames))
+                frame_index = max(0, min(frame_index, len(self.visualizer_frames) - 1))
                 self.visualizer.update_wave(self.visualizer_frames[frame_index])
 
-            if current < 0:
-                return
-
-            # Update progress bar
             self.progress_bar.update_progress(current, total)
-
-            # Auto-advance to next song
-            
 
         except Exception as e:
             print(f"[red]error: {e}[/red]")
-
     # ═══════════════════════════════════════════════════════════════
     # Command Routing & Handling
     # ═══════════════════════════════════════════════════════════════

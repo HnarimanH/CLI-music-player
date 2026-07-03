@@ -102,7 +102,7 @@ class Main(MusicPlayerActions, App):
         current_theme = config.get("theme", "purple")
         self.add_class(current_theme)
         
-        self.set_interval(1 / 20, self.update_progress)
+        self.set_interval(1 / 60, self.update_progress)
         self._setup_global_hotkeys()
 
     # ═══════════════════════════════════════════════════════════════
@@ -120,22 +120,22 @@ class Main(MusicPlayerActions, App):
 
     def action_next_song(self) -> None:
         
-        self.is_paused = False
+        
         self.play_next_song()
 
     def action_prev_song(self) -> None:
         
-        self.is_paused = False
+        
         self.play_previous_song()
     
     def action_forward_song(self) -> None:
         
-        self.is_paused = False
+        
         self.forward_song()
 
     def action_back_song(self) -> None:
         
-        self.is_paused = False
+        
         self.back_song()
 
     def action_vol_up(self) -> None:
