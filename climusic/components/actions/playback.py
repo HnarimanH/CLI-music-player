@@ -31,7 +31,7 @@ class PlayBackActions:
         if self.visualizer_frames is None and self.ambient_visualizer and visualizer:
             self.print_to_terminal(f"[red]Error: ffmpeg not installed[/red]")
             self.print_to_terminal("[red]please install ffmpeg using:[/red]")
-            self.print_to_terminal("[green]python -m ffmpeg_downloader[/green]")
+            self.print_to_terminal("[green]python -m ffmpeg_downloader install[/green]")
             self.print_to_terminal("[red]some songs need ffmpeg for their visualizer[/red]")
         musicController.play_song(self.song)
         self.query_one(NowPlaying).update_song(song_data["ascii_cover"], self.song)
