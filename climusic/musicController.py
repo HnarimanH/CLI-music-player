@@ -7,7 +7,8 @@ from climusic.functions.extractAudioWave import get_audio_wave
 import json
 import random
 from pathlib import Path
-
+from climusic.functions.downlaodNecessaryPackages import ensure_necessary_packages
+from climusic.functions.ambientVisualizer import AmbientVisualizer
 # One place for everything
 APP_DIR = Path.home() / ".climusic"
 APP_DIR.mkdir(exist_ok=True)
@@ -33,6 +34,7 @@ def init_library(new_dir=None):
     
 
 def init_config():
+    ensure_necessary_packages()
     global songs_dir
     while True:
         if not CONFIG_PATH.exists():
@@ -119,27 +121,36 @@ def load_song(index, songs):
     
     visualizer_frames = []
     if config.get("visualizer", True):
-        visualizer_frames = get_audio_wave(song["path"])
-    
+        try:
+            visualizer_frames = get_audio_wave(song["path"])
+            ambient_visualizer = None
+        except FileNotFoundError as e:
+            visualizer_frames = None
+            ambient_visualizer = AmbientVisualizer()
+            
+    else:
+        visualizer_frames = None
+        ambient_visualizer = AmbientVisualizer()
     return {
         "song": song,
         "ascii_cover": ascii_cover,
         "visualizer_frames": visualizer_frames,  
+        "ambient_visualizer":ambient_visualizer 
     }
 
 
 
-def filter_songs_alphabetically(songs, sort_by="title"):
-    """
-    Sort songs alphabetically
+def filter_songs_alphabetically(songs, sort_by="date"):
+    if sort_by in ("date", "added", "new"):
+        return sorted(
+            songs,
+            key=lambda s: os.path.getmtime(s["path"]),
+            reverse=True
+        )
     
-    Args:
-        songs: list of song dicts
-        sort_by: "title", "artist", or "album"
+    if sort_by not in ("title", "artist", "album"):
+        sort_by = "title"  # fallback
     
-    Returns:
-        sorted list
-    """
     return sorted(songs, key=lambda s: s[sort_by].lower())
 
 def get_playlists():

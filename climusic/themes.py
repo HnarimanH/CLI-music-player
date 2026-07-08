@@ -29,8 +29,15 @@ def build_css():
     }
 
     #song-table {
-        height: 70%;
+    
+        height: 1fr;
         border: round;
+        padding: 1;
+    }
+    #search-table {
+        height: 1fr;
+        border: round;
+        padding: 1;
     }
 
     #now-playing {
@@ -50,7 +57,8 @@ def build_css():
         content-align: center middle;
         text-align: center;
     }
-
+    .hidden {
+        display: none;}
     #audio-visualizer {
         height: 20%;
         border: round;
@@ -90,7 +98,7 @@ def build_css():
     theme_css = ""
     for name, colors in themes.items():
         theme_css += f"""
-        .{name} #song-table {{
+        .{name} #song-table, .{name} #search-table {{
             color: {colors['accent']};
             border: round {colors['accent']};
             background: {colors['bg']};

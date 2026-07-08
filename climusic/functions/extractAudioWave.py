@@ -4,74 +4,70 @@ import miniaudio
 import tempfile
 import shutil
 import os
-
+import subprocess
+import ffmpeg_downloader as ffdl
 def load_audio(path):
-    # miniaudio's decode_file wants an actual file path on disk, but "path" here
-    # might be some weird format or location it doesn't like directly, so we make
-    # a clean temp copy first, grab the file extension (.mp3, .flac, whatever)
-    # so the temp file keeps the right format hint
-    ext = os.path.splitext(path)[1]
+    ext = os.path.splitext(path)[1].lower()  # .lower() so .M4A doesn't sneak past
 
-    # Create a temporary file (empty for now) with that same extension.
-    # delete=False means it WON'T auto-delete when closed — we gotta manually
-    # clean it up later, otherwise Windows throws a fit trying to write to
-    # a file that's still "open" in Python's eyes
-    with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
-        tmppath = tmp.name  # just grab the path string, don't need the file object anymore
+    if ext in ('.mp3', '.wav', '.ogg', '.flac'):
+        # miniaudio handles these fine, do the temp copy dance
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmppath = tmp.name
+        shutil.copy2(path, tmppath)
+        try:
+            decoded = miniaudio.decode_file(
+                tmppath,
+                output_format=miniaudio.SampleFormat.FLOAT32,
+                nchannels=1
+            )
+            samples = np.frombuffer(decoded.samples, dtype=np.float32)
+            return samples, decoded.sample_rate
+        finally:
+            os.unlink(tmppath)
 
-    # Copy the ACTUAL audio file's bytes into that temp file location
-    # (copy2 preserves metadata too, not that we care about that here)
-    shutil.copy2(path, tmppath)
-
-    try:
-        # Decode the temp copy into raw float32 samples, forced to mono (1 channel)
-        # so we don't have to deal with stereo weirdness downstream
-        decoded = miniaudio.decode_file(
-            tmppath,
-            output_format=miniaudio.SampleFormat.FLOAT32,
-            nchannels=1
-        )
-
-        # decoded.samples is raw bytes, frombuffer reinterprets those bytes
-        # as an actual numpy array of float32 numbers we can do math on
-        samples = np.frombuffer(decoded.samples, dtype=np.float32)
-
-        return samples, decoded.sample_rate  # hand back the audio data + its sample rate (hz)
-
-    finally:
-        # ALWAYS delete the temp file when we're done, success or failure.
-        # Otherwise you're leaking temp
-        # files onto disk every time someone loads a song. Nasty.
-        os.unlink(tmppath)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def get_audio_wave(path, bars=60, rise=0.1, fall=0.05, noise_floor=0.1):
+    else:
+        # m4a/webm/whatever yt-dlp shat out — pipe through ffmpeg
+        if not ffdl.installed:
+            print("downloading ffmpeg...")
+            os.system("python -m ffmpeg_downloader")
+        
+        cmd = [
+            str(ffdl.ffmpeg_path),
+            '-i', path,
+            '-f', 'f32le',
+            '-ac', '1',
+            '-ar', '16000',
+            '-loglevel', 'quiet',
+            '-'
+        ]
+        try:
+            result = subprocess.run(cmd, capture_output=True)
+        except Exception as e:
+            raise FileNotFoundError(f"Error: Failed to run ffmpeg on {path}")
+        if result.returncode != 0:
+            raise FileNotFoundError(f"Error: ffmpeg choked on {path}")
+        
+        samples = np.frombuffer(result.stdout, dtype=np.float32)
+        return samples, 16000
+def get_audio_wave(path, bars = 45, rise=0.05, fall=0.05, noise_floor=0.04):
     # Load the raw audio samples + sample rate (like 44100hz, however many per second)
-    y, sr = load_audio(path)
+    try:
+        y, sr = load_audio(path)
+    except FileNotFoundError as e:
+        raise e
+    except Exception as e:
+        raise FileNotFoundError(f"Error: Failed to load audio from {path}")
 
     # hopLength = "how many samples we skip between each analysis window"
     # sr // 60 means we get roughly 60 analysis frames per second of audio.
     # Smaller hopLength = more frames = smoother data, but slower to compute.
-    hopLength = sr // 60
+    hopLength = sr // 30
 
     # STFT = Short-Time Fourier Transform. Fancy way of saying:
     # "chop the audio into tiny windows, and for each window figure out
     # how much of each frequency (bass, mid, treble) is present."
     # Output is complex numbers (has magnitude + phase), we only care about magnitude (volume).
-    stft = librosa.stft(y, n_fft=512, hop_length=hopLength)
+    stft = librosa.stft(y, n_fft = 128, hop_length=hopLength)
     spectrogram = np.abs(stft)  # np.abs() strips out the phase junk, leaves pure "how loud is this frequency"
 
     # spectrogram shape is (frequency_bins, time_frames) — we transpose so it's
@@ -120,12 +116,12 @@ def get_audio_wave(path, bars=60, rise=0.1, fall=0.05, noise_floor=0.1):
         if frame_max <= 1e-6:
             # basically silence, dividing by ~0 = math explodes into NaN garbage
             # so just output all zeros instead of letting the universe implode
-            normalized = [0.0] * (bars // 2)
+            normalized = [0.0] * (bars)
         else:
             # divide every bar by the loudest one → everything's now between 0 and 1
             # np.power(x, 0.5) = square root, which makes quiet stuff look LESS quiet
             # (compresses dynamic range so visualizer doesn't look dead most of the time)
-            normalized = [np.power(value / frame_max, 0.5) for value in frame[:bars // 2]]
+            normalized = [np.power(value / frame_max, 0.5) for value in frame[:bars]]
 
         normalized = normalized[1:]  # drop the very first bar (usually ugly DC offset garbage)
 

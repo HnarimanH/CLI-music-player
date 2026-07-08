@@ -7,7 +7,7 @@ class SongTable(DataTable):
 
     def on_mount(self) -> None:
         self.cursor_type = "row"
-        self.add_column("num", width=5)
+        self.add_column("#", width=5)
         self.add_column("Title", width=30)
         self.add_column("Artist", width=20)
         self.add_column("Album", width=25)

@@ -4,6 +4,7 @@ from textual.widgets import Header, DataTable
 from textual.containers import Horizontal, Vertical
 import json
 from climusic.components.audioVisualizer import AudioVisualizer
+from climusic.components.searchResults import SearchResults
 from climusic.components.songTable import SongTable
 from climusic.components.nowPlaying import NowPlaying
 from climusic.components.songProgress import SongProgress
@@ -39,24 +40,20 @@ class Main(MusicPlayerActions, App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with open(musicController.CONFIG_PATH, "r") as f:
-            config = json.load(f)
-        if config["visualizer"]:
-            right_panel = Vertical(
+        right_panel = Vertical(
                 NowPlaying(),
                 AudioVisualizer(),
                
                 id="right_panel"
             )
-        else:
-            right_panel = Horizontal(
-                NowPlaying(),
-                id="right_panel"
-            )
         
         yield Horizontal(
             Vertical(
-                SongTable(),
+                Horizontal(
+                    SongTable(),
+                    SearchResults(classes="hidden"),
+                    id="table-container"
+                ),
                 MiniTerminal(id="terminal"),
                 id="left_panel"
             ),
@@ -91,18 +88,18 @@ class Main(MusicPlayerActions, App):
         if config["shuffle"] == True:
             self.songsList = musicController.shuffle_library(self.allSongs)
         else:
-            self.songsList = musicController.filter_songs_alphabetically(self.allSongs, sort_by="title")
+            self.songsList = musicController.filter_songs_alphabetically(self.allSongs, sort_by="date")
         
         self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
         
-        if config["visualizer"]:
-            self.visualizer = self.query_one(AudioVisualizer)
+        self.visualizer = self.query_one(AudioVisualizer)
+            
         
         current_theme = config.get("theme", "purple")
         self.add_class(current_theme)
         
-        self.set_interval(1 / 60, self.update_progress)
+        self.set_interval(1 / 20, self.update_progress)
         self._setup_global_hotkeys()
 
     # ═══════════════════════════════════════════════════════════════
