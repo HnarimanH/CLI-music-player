@@ -13,6 +13,7 @@ dependencies = [
     "Pillow",
     "miniaudio",
     "pyperclip",
+    "ffmpeg-downloader",
 ]
 
 [project.scripts]
