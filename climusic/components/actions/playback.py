@@ -34,7 +34,10 @@ class PlayBackActions:
             self.print_to_terminal("[green]python -m ffmpeg_downloader install[/green]")
             self.print_to_terminal("[red]some songs need ffmpeg for their visualizer[/red]")
         musicController.play_song(self.song)
-        self.query_one(NowPlaying).update_song(song_data["ascii_cover"], self.song)
+        cover_payload = song_data.get("cover_data") if song_data.get("cover_data") is not None else song_data["ascii_cover"]
+        self.query_one(NowPlaying).update_song(cover_payload, self.song)
+        if hasattr(self, "load_song_lyrics"):
+            self.load_song_lyrics(self.song)
         self._playback_anchor_time = time.time()
         self._playback_anchor_pos = 0
         self._last_vlc_sync = time.time()
@@ -181,6 +184,8 @@ class PlayBackActions:
                     )
 
             self.progress_bar.update_progress(current, total)
+            if hasattr(self, "update_lyrics_tick"):
+                self.update_lyrics_tick(current)
 
         
         except Exception as e:

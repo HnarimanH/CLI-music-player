@@ -23,6 +23,9 @@ It’s basically: *“what if your music player lived inside a glowing terminal 
 ## ⚡ Features
 
 * Real-time audio visualizer that feels slightly alive
+* Synchronized karaoke lyrics with real-time neon highlighting and auto-scrolling
+* Online lyrics auto-fetch (LRCLIB) and offline caching (`.lrc` files & embedded tags)
+* Live lyrics subtitle on Now Playing dashboard
 * Local music library browsing (your chaos, organized… kinda)
 * Queue system for emotional damage playlists
 * Album art support because we’re not animals
@@ -73,12 +76,32 @@ Whether you're coding, studying, or simply prefer living inside your terminal, C
 
 ---
 
-## Keyboard Driven
-
+## Keyboard Driven & Controls
+ 
 Designed around fast navigation and minimal mouse usage.
-
-Control playback, browse your library, manage queues, and navigate your music collection without leaving the keyboard.
-
+ 
+### Hotkeys
+* `space` - Pause / Resume playback
+* `d` / `a` - Next / Previous song
+* `w` / `s` - Volume up / down
+* `q` / `e` - Skip back / forward 5s
+* `l` - Toggle synchronized lyrics view
+* `+` / `-` - Increase / decrease lyrics text size (normal / large / huge)
+* `up` / `down` / `j` / `k` - Scroll lyrics manually
+* `esc` - Close lyrics / search and return to library
+ 
+### Lyrics & Cover Commands (Mini-Terminal)
+* `lyrics`, `lyr`, `l` - Toggle lyrics view
+* `lyrics size <normal|large|huge>` - Adjust lyrics text size
+* `lyrics on` / `lyrics off` - Explicitly show or hide lyrics
+* `lyrics fetch` - Re-fetch online lyrics for current track
+* `lyrics search <query>` - Search LRCLIB for lyrics
+* `lyrics select <1-5>` - Apply and cache chosen lyric result
+* `lyrics offset <+ms/-ms>` - Adjust synchronization timing (e.g. `lyrics offset +500`)
+* `lyrics copy` - Copy complete lyrics to clipboard
+* `lyrics reload` - Reload lyrics from disk/cache
+* `cover <width|auto|big|small>` - Set album ASCII cover size (e.g. `cover 72`, `cover auto`)
+ 
 ---
 
 ## Installation Requirements

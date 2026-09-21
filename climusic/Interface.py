@@ -6,6 +6,7 @@ import json
 from climusic.components.audioVisualizer import AudioVisualizer
 from climusic.components.searchResults import SearchResults
 from climusic.components.songTable import SongTable
+from climusic.components.lyricsView import LyricsView
 from climusic.components.nowPlaying import NowPlaying
 from climusic.components.songProgress import SongProgress
 from climusic.components.miniTerminal import MiniTerminal
@@ -36,6 +37,7 @@ class Main(MusicPlayerActions, App):
         Binding("s", "vol_down", "Vol Down", priority=True),
         Binding("q", "back_song", "Back", priority=True),
         Binding("e", "forward_song", "Forward", priority=True),
+        Binding("l", "toggle_lyrics", "Lyrics", priority=False),
     ]
 
     def compose(self) -> ComposeResult:
@@ -43,7 +45,6 @@ class Main(MusicPlayerActions, App):
         right_panel = Vertical(
                 NowPlaying(),
                 AudioVisualizer(),
-               
                 id="right_panel"
             )
         
@@ -52,9 +53,11 @@ class Main(MusicPlayerActions, App):
                 Horizontal(
                     SongTable(),
                     SearchResults(classes="hidden"),
+                    LyricsView(classes="hidden"),
                     id="table-container"
                 ),
                 MiniTerminal(id="terminal"),
+                
                 id="left_panel"
             ),
             right_panel
@@ -92,8 +95,9 @@ class Main(MusicPlayerActions, App):
         
         self.query_one(SongTable).load_songs(self.songsList)
         self.progress_bar = self.query_one(SongProgress)
-        
         self.visualizer = self.query_one(AudioVisualizer)
+        self.lyrics_view = self.query_one(LyricsView)
+        self.now_playing = self.query_one(NowPlaying)
             
         
         current_theme = config.get("theme", "purple")

@@ -4,8 +4,9 @@ from climusic.components.actions.playlists import PlayListActions
 from climusic.components.actions.commands import CommandActions
 from climusic.components.miniTerminal import MiniTerminal
 from climusic.components.actions.search import SearchActions
+from climusic.components.actions.lyrics import LyricsActions
 
-class MusicPlayerActions(PlayBackActions, PlayListActions, AppearanceActions, CommandActions, SearchActions):
+class MusicPlayerActions(PlayBackActions, PlayListActions, AppearanceActions, CommandActions, SearchActions, LyricsActions):
   
     """
     Mixin for song control logic and command handling.

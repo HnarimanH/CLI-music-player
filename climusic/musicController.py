@@ -114,7 +114,7 @@ def set_position(position):
 def load_song(index, songs):
     song = songs[index]
     cover_data = get_song_info(song["path"])["cover"]
-    ascii_cover = cover_to_ascii(cover_data, width=72)
+    ascii_cover = cover_to_ascii(cover_data, width=64)
     
     with open(CONFIG_PATH, "r") as f:
         config = json.load(f)
@@ -133,9 +133,10 @@ def load_song(index, songs):
         ambient_visualizer = AmbientVisualizer()
     return {
         "song": song,
+        "cover_data": cover_data,
         "ascii_cover": ascii_cover,
         "visualizer_frames": visualizer_frames,  
-        "ambient_visualizer":ambient_visualizer 
+        "ambient_visualizer": ambient_visualizer 
     }
 
 

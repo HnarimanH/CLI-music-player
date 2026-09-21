@@ -64,8 +64,12 @@ class CommandActions:
             self._handle_search(cmd)
         elif base == "dl":
             self._handle_download(cmd)
+        elif base in ("lyrics", "lyr", "l"):
+            self.handle_lyrics_command(cmd)
+        elif base in ("cover", "art"):
+            self._handle_cover_size(cmd)
         elif base == "esc":
-            self._handle_close_search()
+            self._handle_esc()
         else:
             self.print_to_terminal(f"[dim]command not found: {base}[/dim]")
 
@@ -93,6 +97,7 @@ class CommandActions:
                 "  [yellow]a[/yellow]                 previous song",
                 "  [yellow]q[/yellow]                 skip forward 5s",
                 "  [yellow]e[/yellow]                 skip back 5s",
+                "  [yellow]l[/yellow]                 toggle lyrics view",
             ],
             "volume": [
                 "[bold cyan]Volume[/bold cyan]",
@@ -129,6 +134,7 @@ class CommandActions:
                 "[bold cyan]Appearance[/bold cyan]",
                 "  [yellow]theme <name>[/yellow]      change theme (live)",
                 "  [yellow]vis on/off[/yellow]        toggle visualizer",
+                "  [yellow]cover <width>[/yellow]     set ASCII cover size (e.g. 72, auto, big, small)",
             ],
             "themes": [
                 "[bold cyan]Available Themes[/bold cyan]",
@@ -142,6 +148,23 @@ class CommandActions:
                 "  [yellow]dl <1-5>[/yellow]             download result to music dir",
                 "  [yellow]esc[/yellow]                  close search results",
             ],
+            "lyrics": [
+                "[bold cyan]Lyrics[/bold cyan]",
+                "  [yellow]lyrics, lyr, l[/yellow]         toggle lyrics view",
+                "  [yellow]lyrics size <mode>[/yellow]  change size (normal/large/huge)",
+                "  [yellow]lyrics on / off[/yellow]       explicitly show/hide lyrics",
+                "  [yellow]lyrics fetch[/yellow]          retry fetching online lyrics",
+                "  [yellow]lyrics search <query>[/yellow] search LRCLIB for lyrics",
+                "  [yellow]lyrics select <1-5>[/yellow]  apply search result and save",
+                "  [yellow]lyrics offset <+ms>[/yellow]   adjust timing offset (e.g. +500)",
+                "  [yellow]lyrics copy[/yellow]           copy lyrics to clipboard",
+                "  [yellow]lyrics reload[/yellow]         reload lyrics from disk",
+                "[bold cyan]Lyrics hotkeys[/bold cyan]",
+                "  [yellow]l[/yellow]                     toggle lyrics view",
+                "  [yellow]+ / -[/yellow]                 increase / decrease lyrics size",
+                "  [yellow]up / down / j / k[/yellow]     scroll lyrics manually",
+                "  [yellow]esc[/yellow]                   return to library table",
+            ],
         }
 
         if topic is None:
@@ -154,6 +177,67 @@ class CommandActions:
         else:
             self.print_to_terminal(f"[red]no manual entry for: {topic}[/red]")
             self.print_to_terminal("[dim]topics: " + ", ".join(help_text.keys()) + "[/dim]")
+
+    def _handle_esc(self):
+        """Close search results or lyrics view and return to song table."""
+        from climusic.components.lyricsView import LyricsView
+        from climusic.components.searchResults import SearchResults
+        from climusic.components.songTable import SongTable
+
+        try:
+            lv = self.query_one(LyricsView)
+            if not lv.has_class("hidden"):
+                lv.add_class("hidden")
+                self.query_one(SongTable).remove_class("hidden")
+                self._is_lyrics_view_active = False
+                self.print_to_terminal("[dim]back to library[/dim]")
+                return
+        except Exception:
+            pass
+
+        try:
+            sr = self.query_one(SearchResults)
+            if not sr.has_class("hidden"):
+                sr.add_class("hidden")
+                self.query_one(SongTable).remove_class("hidden")
+                self.print_to_terminal("[dim]back to library[/dim]")
+                return
+        except Exception:
+            pass
+
+    def _handle_cover_size(self, cmd: str):
+        """Adjust or query the album ASCII cover size."""
+        from climusic.components.nowPlaying import NowPlaying
+        parts = cmd.split()
+        try:
+            now_playing = self.query_one(NowPlaying)
+        except Exception:
+            self.print_to_terminal("[red]NowPlaying widget not found[/red]")
+            return
+
+        if len(parts) < 2:
+            cur = getattr(now_playing, "cover_width", "auto")
+            self.print_to_terminal(f"current cover size: [yellow]{cur}[/yellow]")
+            self.print_to_terminal("[dim]usage: cover <width|auto|big|small> (e.g. cover 72, cover auto)[/dim]")
+            return
+
+        arg = parts[1].lower()
+        if arg == "auto":
+            now_playing.set_cover_width("auto")
+            self.print_to_terminal("[green]cover size set to: auto (responsive)[/green]")
+        elif arg == "big":
+            now_playing.set_cover_width(76)
+            self.print_to_terminal("[green]cover size set to: 76 (big)[/green]")
+        elif arg == "small":
+            now_playing.set_cover_width(40)
+            self.print_to_terminal("[green]cover size set to: 40 (small)[/green]")
+        elif arg.isdigit():
+            val = max(24, min(int(arg), 120))
+            now_playing.set_cover_width(val)
+            self.print_to_terminal(f"[green]cover size set to: {val}[/green]")
+        else:
+            self.print_to_terminal("[red]usage: cover <width|auto|big|small>[/red]")
+
     # ───────────────────────────────────────────────────────────────
     # Handle repeat
     # ───────────────────────────────────────────────────────────────

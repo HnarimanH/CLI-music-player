@@ -21,11 +21,11 @@ def build_css():
     # Base CSS (layout, no colors)
     base_css = """
     #left_panel {
-        width: 60%;
+        width: 55%;
     }
 
     #right_panel {
-        width: 40%;
+        width: 45%;
     }
 
     #song-table {
@@ -39,9 +39,23 @@ def build_css():
         border: round;
         padding: 1;
     }
+    #lyrics-view {
+        height: 1fr;
+        border: round;
+        padding: 1 2;
+        content-align: center middle;
+        text-align: center;
+    }
+
+    #table-container {
+        height: 1fr;
+    }
 
     #now-playing {
+        padding: 1;
+        text-align: center;
         width: 1fr;
+        height: 1fr;
         border: round;
         align: center middle;
         text-align: center;
@@ -50,23 +64,30 @@ def build_css():
     #AlbumAsciiCover {
         content-align: center middle;
         text-align: center;
-        padding-left: 1;
+        overflow-x: hidden;
     }
 
     #SongDetails, #SongProgress, #SongTime {
         content-align: center middle;
         text-align: center;
     }
+    #NowPlayingLyric {
+        height: 3;
+        margin-top: 1;
+        border: round;
+        content-align: center middle;
+        text-align: center;
+    }
     .hidden {
         display: none;}
     #audio-visualizer {
-        height: 20%;
+        height: 15%;
         border: round;
         content-align: center middle;
     }
 
     #terminal {
-        height: 30%;
+        height: 35%;
         border: round;
         content-align: center middle;
     }
@@ -98,7 +119,7 @@ def build_css():
     theme_css = ""
     for name, colors in themes.items():
         theme_css += f"""
-        .{name} #song-table, .{name} #search-table {{
+        .{name} #song-table, .{name} #search-table, .{name} #lyrics-view {{
             color: {colors['accent']};
             border: round {colors['accent']};
             background: {colors['bg']};
@@ -116,6 +137,11 @@ def build_css():
 
         .{name} #SongDetails, .{name} #SongProgress, .{name} #SongTime {{
             color: {colors['accent']};
+        }}
+
+        .{name} #NowPlayingLyric {{
+            color: {colors['accent']};
+            border: round {colors['accent']};
         }}
 
         .{name} #audio-visualizer {{
