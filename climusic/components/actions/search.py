@@ -89,6 +89,7 @@ class SearchActions:
                 'format': 'bestaudio[ext=m4a]/bestaudio',
                 'outtmpl': f'{config["dir"]}/%(title)s.%(ext)s',
                 'quiet': True,
+                
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(song["url"], download=True)
