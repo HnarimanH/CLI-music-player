@@ -8,16 +8,20 @@ class SearchResults(DataTable):
     def on_mount(self) -> None:
         self.cursor_type = "row"
         self.add_column("#", width=3)
-        self.add_column("Title", width=30)
-        self.add_column("Duration", width=10)
-        self.add_column("Channel", width=20)
+        self.add_column("Title", width=24)
+        self.add_column("Artist", width=18)
+        self.add_column("Album", width=20)
+        self.add_column("Time", width=8)
 
     def load_results(self, results: list):
         self.clear()
         for i, r in enumerate(results, start=1):
+            artist = r.get("artist") or r.get("channel") or "Unknown"
+            album = r.get("album") or "Unknown"
             self.add_row(
                 str(i),
-                r["title"],
-                r["duration"],
-                r["channel"],
+                r.get("title", "Unknown"),
+                artist,
+                album,
+                r.get("duration", "--:--"),
             )

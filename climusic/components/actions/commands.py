@@ -66,6 +66,8 @@ class CommandActions:
             self._handle_download(cmd)
         elif base in ("lyrics", "lyr", "l"):
             self.handle_lyrics_command(cmd)
+        elif base in ("spotify", "sp"):
+            self._handle_spotify_command(cmd)
         elif base in ("cover", "art"):
             self._handle_cover_size(cmd)
         elif base == "esc":
@@ -134,7 +136,10 @@ class CommandActions:
                 "[bold cyan]Appearance[/bold cyan]",
                 "  [yellow]theme <name>[/yellow]      change theme (live)",
                 "  [yellow]vis on/off[/yellow]        toggle visualizer",
-                "  [yellow]cover <width>[/yellow]     set ASCII cover size (e.g. 72, auto, big, small)",
+                "  [yellow]cover <width>[/yellow]     set cover size (20-120, auto, big, small)",
+                "  [yellow]cover +/-[/yellow]         increase / decrease cover size by 4",
+                "  [yellow]cover <style>[/yellow]     pixel, ascii, braille, quadrant, blocks",
+                "  [yellow]cover contrast <x>[/yellow] adjust contrast boost (0.5 to 3.0)",
             ],
             "themes": [
                 "[bold cyan]Available Themes[/bold cyan]",
@@ -144,9 +149,15 @@ class CommandActions:
             ],
             "search": [
                 "[bold cyan]Search & Download[/bold cyan]",
-                "  [yellow]search, s <query>[/yellow]    search YouTube for songs",
-                "  [yellow]dl <1-5>[/yellow]             download result to music dir",
+                "  [yellow]search, s <query>[/yellow]    search Spotify for songs with album art",
+                "  [yellow]dl <1-5>[/yellow]             download track with album & cover art",
                 "  [yellow]esc[/yellow]                  close search results",
+            ],
+            "spotify": [
+                "[bold cyan]Spotify Integration[/bold cyan]",
+                "  [yellow]spotify token <tok>[/yellow]   save Spotify bearer access token",
+                "  [yellow]spotify config <id> <sec>[/yellow] save Spotify API client credentials",
+                "  [yellow]spotify status[/yellow]        check active Spotify API status",
             ],
             "lyrics": [
                 "[bold cyan]Lyrics[/bold cyan]",
@@ -206,37 +217,164 @@ class CommandActions:
             pass
 
     def _handle_cover_size(self, cmd: str):
-        """Adjust or query the album ASCII cover size."""
+        """Adjust or query the album ASCII/pixel cover rendering."""
         from climusic.components.nowPlaying import NowPlaying
-        parts = cmd.split()
+        parts = cmd.strip().split()
         try:
             now_playing = self.query_one(NowPlaying)
         except Exception:
             self.print_to_terminal("[red]NowPlaying widget not found[/red]")
             return
 
-        if len(parts) < 2:
-            cur = getattr(now_playing, "cover_width", "auto")
-            self.print_to_terminal(f"current cover size: [yellow]{cur}[/yellow]")
-            self.print_to_terminal("[dim]usage: cover <width|auto|big|small> (e.g. cover 72, cover auto)[/dim]")
+        if len(parts) < 2 or parts[1].lower() in ("help", "status", "info"):
+            cur_w = getattr(now_playing, "cover_width", "auto")
+            cur_style = getattr(now_playing, "cover_style", "ascii")
+            cur_contrast = getattr(now_playing, "cover_contrast", 1.25)
+            rendered_w = getattr(now_playing, "_rendered_width", 64)
+            rendered_h = max(1, int(rendered_w * 0.5))
+
+            if cur_style in ("pixel", "halfblock", "color"):
+                pixel_info = f"{rendered_w}x{rendered_w} ({rendered_w * rendered_w:,} true-color square pixels, 2x vertical)"
+            elif cur_style in ("quadrant", "quad"):
+                pixel_info = f"{rendered_w * 2}x{rendered_h * 2} ({rendered_w * 2 * rendered_h * 2:,} sub-pixels, 4x)"
+            elif cur_style == "braille":
+                pixel_info = f"{rendered_w * 2}x{rendered_h * 4} ({rendered_w * 2 * rendered_h * 4:,} sub-pixels, 8x)"
+            else:
+                pixel_info = f"{rendered_w}x{rendered_h} ({rendered_w * rendered_h:,} keyboard characters)"
+
+            self.print_to_terminal("[bold cyan]Cover Settings & Status[/bold cyan]")
+            self.print_to_terminal(f"  Width:      [yellow]{cur_w}[/yellow] (active: {rendered_w} cols)")
+            self.print_to_terminal(f"  Style:      [yellow]{cur_style}[/yellow]")
+            self.print_to_terminal(f"  Resolution: [green]{pixel_info}[/green]")
+            self.print_to_terminal(f"  Contrast:   [yellow]{cur_contrast:.2f}x[/yellow]")
+            self.print_to_terminal("[dim]Commands: cover <20-120> | cover +/- | cover <pixel|ascii|braille|quadrant|blocks> | cover contrast <0.5-3.0>[/dim]")
             return
 
         arg = parts[1].lower()
+
+        # Incremental adjustments
+        if arg in ("+", "bigger", "up", "zoomin"):
+            new_w = now_playing.adjust_cover_width(4)
+            self.print_to_terminal(f"[green]cover size increased to: {new_w} cols[/green]")
+            return
+        elif arg in ("-", "smaller", "down", "zoomout"):
+            new_w = now_playing.adjust_cover_width(-4)
+            self.print_to_terminal(f"[green]cover size decreased to: {new_w} cols[/green]")
+            return
+
+        # Sizing presets
         if arg == "auto":
             now_playing.set_cover_width("auto")
             self.print_to_terminal("[green]cover size set to: auto (responsive)[/green]")
-        elif arg == "big":
-            now_playing.set_cover_width(76)
-            self.print_to_terminal("[green]cover size set to: 76 (big)[/green]")
-        elif arg == "small":
+            return
+        elif arg in ("small", "sm"):
             now_playing.set_cover_width(40)
             self.print_to_terminal("[green]cover size set to: 40 (small)[/green]")
-        elif arg.isdigit():
-            val = max(24, min(int(arg), 120))
+            return
+        elif arg in ("medium", "med"):
+            now_playing.set_cover_width(56)
+            self.print_to_terminal("[green]cover size set to: 56 (medium)[/green]")
+            return
+        elif arg in ("big", "large", "lg"):
+            now_playing.set_cover_width(72)
+            self.print_to_terminal("[green]cover size set to: 72 (big)[/green]")
+            return
+        elif arg in ("huge", "xl"):
+            now_playing.set_cover_width(88)
+            self.print_to_terminal("[green]cover size set to: 88 (huge)[/green]")
+            return
+        elif arg in ("max", "xxl"):
+            now_playing.set_cover_width(104)
+            self.print_to_terminal("[green]cover size set to: 104 (max)[/green]")
+            return
+
+        # Explicit numeric width
+        if arg.isdigit():
+            val = max(20, min(int(arg), 120))
             now_playing.set_cover_width(val)
-            self.print_to_terminal(f"[green]cover size set to: {val}[/green]")
+            self.print_to_terminal(f"[green]cover size set to: {val} cols[/green]")
+            return
+
+        # Contrast adjustment: cover contrast 1.5
+        if arg == "contrast":
+            if len(parts) >= 3:
+                try:
+                    cval = float(parts[2])
+                    now_playing.set_cover_contrast(cval)
+                    self.print_to_terminal(f"[green]cover contrast set to: {cval:.2f}x[/green]")
+                    return
+                except ValueError:
+                    self.print_to_terminal("[red]usage: cover contrast <0.5-3.0>[/red]")
+                    return
+            else:
+                cur_c = getattr(now_playing, "cover_contrast", 1.25)
+                self.print_to_terminal(f"current contrast: [yellow]{cur_c:.2f}x[/yellow] (usage: cover contrast <0.5-3.0>)")
+                return
+
+        # Style / Mode adjustments: cover style <mode> or cover <mode>
+        style_arg = parts[2].lower() if (arg in ("style", "mode") and len(parts) >= 3) else arg
+        if style_arg in ("pixel", "halfblock", "color"):
+            now_playing.set_cover_style("pixel")
+            self.print_to_terminal("[green]cover style set to: pixel (2x true-color half-blocks, 1:1 square pixels)[/green]")
+        elif style_arg in ("ascii", "keyboard"):
+            now_playing.set_cover_style("ascii")
+            self.print_to_terminal("[green]cover style set to: ascii (keyboard symbols:  .,-~:;=!*#$@)[/green]")
+        elif style_arg == "braille":
+            now_playing.set_cover_style("braille")
+            self.print_to_terminal("[green]cover style set to: braille (8x sub-pixel dot matrix)[/green]")
+        elif style_arg in ("quadrant", "quad"):
+            now_playing.set_cover_style("quadrant")
+            self.print_to_terminal("[green]cover style set to: quadrant (4x sub-pixel 2x2 blocks)[/green]")
+        elif style_arg in ("blocks", "block"):
+            now_playing.set_cover_style("blocks")
+            self.print_to_terminal("[green]cover style set to: blocks (Unicode block shading ░▒▓█)[/green]")
         else:
-            self.print_to_terminal("[red]usage: cover <width|auto|big|small>[/red]")
+            self.print_to_terminal("[red]unknown cover option. Use: cover <20-120|auto|+/-|pixel|ascii|braille|quadrant|blocks>[/red]")
+
+    def _handle_spotify_command(self, cmd: str):
+        """Manage Spotify authentication token and credentials."""
+        from climusic.functions.spotifyClient import (
+            save_spotify_token,
+            save_spotify_credentials,
+            load_config
+        )
+        parts = cmd.split()
+        if len(parts) < 2:
+            cfg = load_config()
+            has_token = bool(cfg.get("spotify_token"))
+            has_creds = bool(cfg.get("spotify_client_id") and cfg.get("spotify_client_secret"))
+            status = "[green]active[/green]" if (has_token or has_creds) else "[yellow]fallback (iTunes/zero-config)[/yellow]"
+            self.print_to_terminal(f"Spotify mode: {status}")
+            self.print_to_terminal("[dim]usage: spotify token <access_token>[/dim]")
+            self.print_to_terminal("[dim]       spotify config <client_id> <client_secret>[/dim]")
+            self.print_to_terminal("[dim]       spotify status[/dim]")
+            return
+
+        sub = parts[1].lower()
+        if sub == "token":
+            if len(parts) < 3:
+                self.print_to_terminal("[red]usage: spotify token <access_token>[/red]")
+                return
+            token = parts[2].strip()
+            save_spotify_token(token)
+            self.print_to_terminal("[green]Spotify token saved successfully![/green]")
+        elif sub in ("config", "auth"):
+            if len(parts) < 4:
+                self.print_to_terminal("[red]usage: spotify config <client_id> <client_secret>[/red]")
+                return
+            cid = parts[2].strip()
+            csec = parts[3].strip()
+            save_spotify_credentials(cid, csec)
+            self.print_to_terminal("[green]Spotify credentials saved successfully![/green]")
+        elif sub == "status":
+            cfg = load_config()
+            has_token = bool(cfg.get("spotify_token"))
+            has_creds = bool(cfg.get("spotify_client_id") and cfg.get("spotify_client_secret"))
+            status = "[green]active[/green]" if (has_token or has_creds) else "[yellow]fallback (iTunes)[/yellow]"
+            self.print_to_terminal(f"Spotify mode: {status}")
+        else:
+            self.print_to_terminal(f"[red]unknown spotify command: {sub}[/red]")
+            self.print_to_terminal("[dim]try: spotify token <token> or spotify config <id> <sec>[/dim]")
 
     # ───────────────────────────────────────────────────────────────
     # Handle repeat

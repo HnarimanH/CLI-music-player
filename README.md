@@ -90,6 +90,13 @@ Designed around fast navigation and minimal mouse usage.
 * `up` / `down` / `j` / `k` - Scroll lyrics manually
 * `esc` - Close lyrics / search and return to library
  
+### Search & Download Commands
+* `search <query>` (or `s <query>`) - Search Spotify for tracks with album name & cover art
+* `dl <1-5>` - Download song with embedded album name and high-res cover art
+* `spotify token <access_token>` - Save Spotify Web API bearer token
+* `spotify config <client_id> <client_secret>` - Save Spotify client credentials
+* `spotify status` - Check current Spotify integration status
+
 ### Lyrics & Cover Commands (Mini-Terminal)
 * `lyrics`, `lyr`, `l` - Toggle lyrics view
 * `lyrics size <normal|large|huge>` - Adjust lyrics text size
@@ -100,8 +107,12 @@ Designed around fast navigation and minimal mouse usage.
 * `lyrics offset <+ms/-ms>` - Adjust synchronization timing (e.g. `lyrics offset +500`)
 * `lyrics copy` - Copy complete lyrics to clipboard
 * `lyrics reload` - Reload lyrics from disk/cache
-* `cover <width|auto|big|small>` - Set album ASCII cover size (e.g. `cover 72`, `cover auto`)
- 
+* `cover <width>` - Set album cover size (e.g. `cover 72`, `cover 80`, `cover 100`, `cover auto`)
+* `cover +/-` - Increase or decrease cover size by 4 pixels on the fly
+* `cover <preset>` - Quick presets: `cover small` (40), `medium` (56), `big` (72), `huge` (88), `max` (104)
+* `cover <style>` - Switch rendering style: `pixel` (2x true-color half-blocks), `ascii` (keyboard symbols), `braille` (8x dot matrix), `quadrant` (4x sub-pixels), `blocks` (shaded Unicode blocks)
+* `cover contrast <0.5-3.0>` - Fine-tune image contrast boost
+* `cover` (or `cover status`) - Display active cover resolution, style, and pixel statistics
 ---
 
 ## Installation Requirements

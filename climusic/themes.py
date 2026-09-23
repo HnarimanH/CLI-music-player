@@ -59,6 +59,8 @@ def build_css():
         border: round;
         align: center middle;
         text-align: center;
+        overflow-y: auto;
+        scrollbar-size: 1 1;
     }
 
     #AlbumAsciiCover {
