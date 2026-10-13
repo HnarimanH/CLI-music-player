@@ -40,6 +40,8 @@ class CommandActions:
             self.handle_volume(cmd)
         elif base == "shuffle" or base == "shuf":
             self._handle_shuffle()
+        elif base == "shuffle" and parts[1]:
+            self._handle_shuffle(parts=parts)
         elif base == "theme" or base == "t":
             self._handle_theme(cmd)
         elif base == "vis" or base == "visualizer":

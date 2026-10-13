@@ -40,22 +40,27 @@ class AppearanceActions:
     # Shuffle
     # ───────────────────────────────────────────────────────────────
 
-    def _handle_shuffle(self):
+    def _handle_shuffle(self,parts=None):
         """Toggle shuffle mode"""
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
         
         config["shuffle"] = not config.get("shuffle", False)
-        current_songs =  musicController.filter_songs_alphabetically(self.songsList, sort_by="title")  # Preserve current order for unshuffling
+        current_songs =  musicController.filter_songs_alphabetically(self.songsList)  # Preserve current order for unshuffling
         # Update the song list based on shuffle state
-        if config["shuffle"]:
+        if config["shuffle"] and parts and parts[1].lower() == "on":
             self.songsList = musicController.shuffle_library(current_songs)
             msg = "shuffle: on"
-        else:
+        elif config["shuffle"] and (not parts or parts[1].lower() != "off"):
             # Reload original library order
             self.songsList = current_songs
             msg = "shuffle: off"
-        
+        elif parts[0]:
+            self.songsList = musicController.shuffle_library(current_songs)
+            msg = "shuffled library"
+        else:
+            self.songsList = musicController.filter_songs_alphabetically(current_songs)
+            msg = "shuffle: off"
         # Save config
         with open(CONFIG_PATH, "w") as f:
             json.dump(config, f)
